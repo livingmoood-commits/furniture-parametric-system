@@ -4,7 +4,6 @@ import type { BedSpec } from '../../models';
 
 function makeBed(overrides: Partial<BedSpec> = {}): BedSpec {
   return {
-    enabled: true,
     mattress: { width: 1600, length: 2000, thicknessMm: 250 },
     sideThicknessMm: 18,
     frameThicknessMm: 18,

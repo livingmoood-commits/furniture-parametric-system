@@ -11,13 +11,15 @@ export interface QCItem {
 export function buildFinalQC(project: Project, parts: Part[], nesting: NestingResult): QCItem[] {
   const items: QCItem[] = [];
 
-  if (project.bed.enabled) {
-    items.push({
-      id: 'qc-mattress',
-      label: `Mattress size ${project.bed.mattress.width}×${project.bed.mattress.length}mm confirmed`,
-      labelAr: `مقاس المرتبة ${project.bed.mattress.width}×${project.bed.mattress.length}مم مؤكد`,
-      passed: project.bed.mattress.width > 0 && project.bed.mattress.length > 0,
-    });
+  for (const item of project.furniture) {
+    if (item.kind === 'bed') {
+      items.push({
+        id: `qc-mattress-${item.id}`,
+        label: `${item.name}: mattress size ${item.spec.mattress.width}×${item.spec.mattress.length}mm confirmed`,
+        labelAr: `${item.name}: مقاس المرتبة ${item.spec.mattress.width}×${item.spec.mattress.length}مم مؤكد`,
+        passed: item.spec.mattress.width > 0 && item.spec.mattress.length > 0,
+      });
+    }
   }
 
   const totalInstances = parts.reduce((s, p) => s + p.quantity, 0);

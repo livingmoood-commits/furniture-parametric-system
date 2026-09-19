@@ -14,25 +14,26 @@ export interface ThinMaterial {
 
 /**
  * Generates one full carcass + drawer set per unit. `nightstand.quantity` copies get
- * distinct NS-01-..., NS-02-... id prefixes but come from the exact same geometry function.
- * `thinMaterial` is a distinct, thinner board (e.g. 6mm MDF) for the back panel and drawer
- * bottoms — tagging them with the main carcass material at a fake thickness would leave
- * them with no matching board to nest on.
+ * distinct `${idPrefix}-01-...`, `${idPrefix}-02-...` id prefixes but come from the exact
+ * same geometry function. `idPrefix` is the owning furniture-list item's own id, so two
+ * nightstand items in the same project never collide. `thinMaterial` is a distinct,
+ * thinner board (e.g. 6mm MDF) for the back panel and drawer bottoms — tagging them with
+ * the main carcass material at a fake thickness would leave them with no matching board.
  */
-export function generateNightstandParts(ns: NightstandSpec, thinMaterial: ThinMaterial): NightstandGenerationResult {
+export function generateNightstandParts(idPrefix: string, itemName: string, ns: NightstandSpec, thinMaterial: ThinMaterial): NightstandGenerationResult {
   const geo = deriveNightstandGeometry(ns);
   const parts: Part[] = [];
   const components: Component[] = [];
 
   for (let unit = 1; unit <= ns.quantity; unit++) {
-    const prefix = `NS-0${unit}-`;
+    const prefix = `${idPrefix}-0${unit}-`;
     const componentId = `COMP-${prefix}UNIT`;
     const visibleEdge = { ...defaultEdgeBanding(), top: true };
 
     const sideL: Part = {
       id: `${prefix}SIDE-L-01`,
-      name: `Nightstand ${unit} left side`,
-      nameAr: `جانب الكومودينو ${unit} الأيسر`,
+      name: `${itemName} ${unit} left side`,
+      nameAr: `جانب ${itemName} ${unit} الأيسر`,
       componentId,
       dimensions: { length: ns.depth, width: ns.height, thicknessMm: ns.sideThicknessMm },
       quantity: 1,
@@ -46,12 +47,12 @@ export function generateNightstandParts(ns: NightstandSpec, thinMaterial: ThinMa
         { toPartId: `${prefix}BOTTOM-01`, joinType: 'cam-lock', fastenerCount: 2 },
       ],
     };
-    const sideR: Part = { ...sideL, id: `${prefix}SIDE-R-01`, name: `Nightstand ${unit} right side`, nameAr: `جانب الكومودينو ${unit} الأيمن` };
+    const sideR: Part = { ...sideL, id: `${prefix}SIDE-R-01`, name: `${itemName} ${unit} right side`, nameAr: `جانب ${itemName} ${unit} الأيمن` };
 
     const top: Part = {
       id: `${prefix}TOP-01`,
-      name: `Nightstand ${unit} top`,
-      nameAr: `سطح الكومودينو ${unit}`,
+      name: `${itemName} ${unit} top`,
+      nameAr: `سطح ${itemName} ${unit}`,
       componentId,
       dimensions: { length: ns.width, width: ns.depth, thicknessMm: ns.sideThicknessMm },
       quantity: 1,
@@ -62,12 +63,12 @@ export function generateNightstandParts(ns: NightstandSpec, thinMaterial: ThinMa
       machiningOperations: [],
       assembly: [],
     };
-    const bottom: Part = { ...top, id: `${prefix}BOTTOM-01`, name: `Nightstand ${unit} bottom`, nameAr: `قاعدة الكومودينو ${unit}`, edgeBanding: defaultEdgeBanding() };
+    const bottom: Part = { ...top, id: `${prefix}BOTTOM-01`, name: `${itemName} ${unit} bottom`, nameAr: `قاعدة ${itemName} ${unit}`, edgeBanding: defaultEdgeBanding() };
 
     const back: Part = {
       id: `${prefix}BACK-01`,
-      name: `Nightstand ${unit} back panel`,
-      nameAr: `ظهر الكومودينو ${unit}`,
+      name: `${itemName} ${unit} back panel`,
+      nameAr: `ظهر ${itemName} ${unit}`,
       componentId,
       dimensions: { length: geo.carcassInnerWidth, width: ns.height - 2 * ns.sideThicknessMm, thicknessMm: thinMaterial.thicknessMm },
       quantity: 1,
@@ -90,8 +91,8 @@ export function generateNightstandParts(ns: NightstandSpec, thinMaterial: ThinMa
 
       const front: Part = {
         id: `${dPrefix}FRONT`,
-        name: `Nightstand ${unit} drawer ${i + 1} front`,
-        nameAr: `واجهة درج ${i + 1} — كومودينو ${unit}`,
+        name: `${itemName} ${unit} drawer ${i + 1} front`,
+        nameAr: `واجهة درج ${i + 1} — ${itemName} ${unit}`,
         componentId,
         dimensions: { length: geo.carcassInnerWidth, width: drawer.frontHeight, thicknessMm: ns.sideThicknessMm },
         quantity: 1,
@@ -104,8 +105,8 @@ export function generateNightstandParts(ns: NightstandSpec, thinMaterial: ThinMa
       };
       const boxSideL: Part = {
         id: `${dPrefix}BOX-SIDE-L`,
-        name: `Nightstand ${unit} drawer ${i + 1} box side (L)`,
-        nameAr: `جانب صندوق الدرج ${i + 1} — كومودينو ${unit}`,
+        name: `${itemName} ${unit} drawer ${i + 1} box side (L)`,
+        nameAr: `جانب صندوق الدرج ${i + 1} — ${itemName} ${unit}`,
         componentId,
         dimensions: { length: drawer.boxDepth, width: drawer.boxHeight, thicknessMm: ns.sideThicknessMm },
         quantity: 1,
@@ -116,11 +117,11 @@ export function generateNightstandParts(ns: NightstandSpec, thinMaterial: ThinMa
         machiningOperations: [],
         assembly: [{ toPartId: `${prefix}SIDE-L-01`, joinType: 'slide-runner', note: 'Ball-bearing drawer slide' }],
       };
-      const boxSideR: Part = { ...boxSideL, id: `${dPrefix}BOX-SIDE-R`, name: `Nightstand ${unit} drawer ${i + 1} box side (R)` };
+      const boxSideR: Part = { ...boxSideL, id: `${dPrefix}BOX-SIDE-R`, name: `${itemName} ${unit} drawer ${i + 1} box side (R)` };
       const boxBack: Part = {
         id: `${dPrefix}BOX-BACK`,
-        name: `Nightstand ${unit} drawer ${i + 1} box back`,
-        nameAr: `خلفية صندوق الدرج ${i + 1} — كومودينو ${unit}`,
+        name: `${itemName} ${unit} drawer ${i + 1} box back`,
+        nameAr: `خلفية صندوق الدرج ${i + 1} — ${itemName} ${unit}`,
         componentId,
         dimensions: { length: drawer.boxWidth, width: drawer.boxHeight, thicknessMm: ns.sideThicknessMm },
         quantity: 1,
@@ -136,8 +137,8 @@ export function generateNightstandParts(ns: NightstandSpec, thinMaterial: ThinMa
       };
       const boxBottom: Part = {
         id: `${dPrefix}BOX-BOTTOM`,
-        name: `Nightstand ${unit} drawer ${i + 1} box bottom`,
-        nameAr: `قاعدة صندوق الدرج ${i + 1} — كومودينو ${unit}`,
+        name: `${itemName} ${unit} drawer ${i + 1} box bottom`,
+        nameAr: `قاعدة صندوق الدرج ${i + 1} — ${itemName} ${unit}`,
         componentId,
         dimensions: { length: drawer.boxWidth, width: drawer.boxDepth, thicknessMm: thinMaterial.thicknessMm },
         quantity: 1,
@@ -152,7 +153,7 @@ export function generateNightstandParts(ns: NightstandSpec, thinMaterial: ThinMa
       parts.push(front, boxSideL, boxSideR, boxBack, boxBottom);
     });
 
-    components.push({ id: componentId, name: `Nightstand ${unit}`, nameAr: `الكومودينو ${unit}`, partIds: parts.filter((p) => p.componentId === componentId).map((p) => p.id) });
+    components.push({ id: componentId, name: `${itemName} ${unit}`, nameAr: `${itemName} ${unit}`, partIds: parts.filter((p) => p.componentId === componentId).map((p) => p.id) });
   }
 
   return { parts, components };

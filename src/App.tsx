@@ -1,10 +1,8 @@
-import { useMemo, useState, type ComponentType } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
 import type { Project } from './models';
 import { createDefaultProject } from './data/defaultProject';
 import { deriveProject } from './engine/derive';
-import { BedForm } from './components/forms/BedForm';
-import { NightstandForm } from './components/forms/NightstandForm';
-import { FreeFurnitureForm } from './components/forms/FreeFurnitureForm';
+import { FurnitureList } from './components/forms/FurnitureList';
 import { MaterialsBoardsForm } from './components/forms/MaterialsBoardsForm';
 import { NestingSettingsForm } from './components/forms/NestingSettingsForm';
 import { SummaryView } from './components/results/SummaryView';
@@ -38,9 +36,68 @@ const TABS: Array<{ id: Tab; label: string; icon: ComponentType<{ className?: st
   { id: 'qc', label: '10 · الفحص النهائي', icon: QCIcon },
 ];
 
+const SIDEBAR_MIN = 300;
+const SIDEBAR_MAX = 900;
+const SIDEBAR_DEFAULT = 420;
+const SIDEBAR_STORAGE_KEY = 'lm-sidebar-width';
+
+/** Drag-to-resize the sidebar/main split, remembering the chosen width per browser. */
+function useResizableSidebar() {
+  const [width, setWidth] = useState<number>(() => {
+    try {
+      const saved = Number(localStorage.getItem(SIDEBAR_STORAGE_KEY));
+      return saved >= SIDEBAR_MIN && saved <= SIDEBAR_MAX ? saved : SIDEBAR_DEFAULT;
+    } catch {
+      return SIDEBAR_DEFAULT;
+    }
+  });
+  const [dragging, setDragging] = useState(false);
+  const startRef = useRef({ x: 0, width: SIDEBAR_DEFAULT });
+
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault();
+      startRef.current = { x: e.clientX, width };
+      setDragging(true);
+    },
+    [width]
+  );
+
+  const resetWidth = useCallback(() => setWidth(SIDEBAR_DEFAULT), []);
+
+  useEffect(() => {
+    if (!dragging) return;
+    const onMove = (e: PointerEvent) => {
+      const next = Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, startRef.current.width + (e.clientX - startRef.current.x)));
+      setWidth(next);
+    };
+    const onUp = () => setDragging(false);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    document.body.classList.add('resizing-col');
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      document.body.classList.remove('resizing-col');
+    };
+  }, [dragging]);
+
+  useEffect(() => {
+    if (dragging) return;
+    try {
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(width));
+    } catch {
+      /* per-viewer convenience only — fine to skip silently */
+    }
+  }, [width, dragging]);
+
+  return { width, onPointerDown, resetWidth };
+}
+
 function App() {
   const [project, setProject] = useState<Project>(createDefaultProject);
   const [tab, setTab] = useState<Tab>('summary');
+  const sidebar = useResizableSidebar();
 
   const derived = useMemo(() => deriveProject(project), [project]);
 
@@ -63,10 +120,8 @@ function App() {
       </header>
 
       <div className="app-body">
-        <aside className="app-sidebar">
-          <BedForm bed={project.bed} onChange={(bed) => setProject({ ...project, bed })} />
-          <NightstandForm nightstand={project.nightstand} materials={project.materials} onChange={(nightstand) => setProject({ ...project, nightstand })} />
-          <FreeFurnitureForm items={project.freeFurniture} materials={project.materials} onChange={(freeFurniture) => setProject({ ...project, freeFurniture })} />
+        <aside className="app-sidebar" style={{ width: sidebar.width }}>
+          <FurnitureList furniture={project.furniture} materials={project.materials} onChange={(furniture) => setProject({ ...project, furniture })} />
           <MaterialsBoardsForm
             materials={project.materials}
             boards={project.boards}
@@ -80,6 +135,16 @@ function App() {
             onDisplayUnitChange={(displayUnit) => setProject({ ...project, displayUnit })}
           />
         </aside>
+
+        <div
+          className="sidebar-resizer"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="تكبير/تصغير عرض القائمة الجانبية"
+          onPointerDown={sidebar.onPointerDown}
+          onDoubleClick={sidebar.resetWidth}
+          title="اسحب لتغيير العرض — دبل كليك للرجوع للمقاس الافتراضي"
+        />
 
         <main className="app-main">
           <nav className="tab-bar">

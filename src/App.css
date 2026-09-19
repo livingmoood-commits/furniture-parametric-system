@@ -78,17 +78,38 @@ body {
 }
 
 .app-sidebar {
-  width: 380px;
   flex-shrink: 0;
-  border-right: 1px solid var(--border);
   padding: 16px;
   overflow-y: auto;
   max-height: calc(100vh - 90px);
   background: var(--panel);
 }
 
+.sidebar-resizer {
+  flex-shrink: 0;
+  width: 6px;
+  cursor: col-resize;
+  background: var(--border);
+  position: relative;
+  touch-action: none;
+}
+.sidebar-resizer::after {
+  content: '';
+  position: absolute;
+  inset: 0 -4px;
+}
+.sidebar-resizer:hover,
+body.resizing-col .sidebar-resizer {
+  background: var(--accent);
+}
+body.resizing-col {
+  cursor: col-resize;
+  user-select: none;
+}
+
 .app-main {
   flex: 1;
+  min-width: 0;
   padding: 16px 24px;
   overflow-y: auto;
   max-height: calc(100vh - 90px);
@@ -112,6 +133,44 @@ body {
   align-items: center;
   gap: 8px;
   cursor: pointer;
+}
+
+.add-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.add-row .field {
+  flex: 1;
+}
+.add-row > button {
+  margin-top: 0;
+  height: 30px;
+}
+
+.furniture-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+.furniture-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.furniture-card-header .field {
+  flex: 1;
+}
+.furniture-card-header .field input {
+  font-weight: 600;
+}
+.furniture-card-header button.danger {
+  margin-top: 0;
+  flex-shrink: 0;
 }
 
 .field-grid {

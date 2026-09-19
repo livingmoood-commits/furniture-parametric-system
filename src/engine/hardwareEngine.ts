@@ -14,19 +14,19 @@ const FASTENER_LABELS: Partial<Record<JoinType, { name: string; nameAr: string }
 export function computeHardware(project: Project, parts: Part[]): HardwareItem[] {
   const items: HardwareItem[] = [];
 
-  if (project.bed.enabled) {
-    items.push({ id: 'HW-BED-MECHANISM', name: 'Hydraulic lift mechanism', nameAr: 'ميكانيزم رفع هيدروليكي', category: 'mechanism', quantity: 1, unit: 'set' });
-    items.push({ id: 'HW-BED-LEGS', name: 'Bed legs', nameAr: 'أرجل السرير', category: 'leg', quantity: 6, unit: 'piece' });
-    items.push({ id: 'HW-BED-RUBBER-STRIP', name: 'Rubber bumper strip', nameAr: 'شريط مطاطي', category: 'trim', quantity: 1, unit: 'set' });
-  }
-
-  if (project.nightstand.enabled) {
-    const drawerTotal = project.nightstand.drawerCount * project.nightstand.quantity;
-    if (drawerTotal > 0) {
-      items.push({ id: 'HW-NS-RUNNERS', name: 'Ball-bearing drawer slides', nameAr: 'سكك أدراج', category: 'runner', quantity: drawerTotal, unit: 'pair' });
-      items.push({ id: 'HW-NS-HANDLES', name: 'Drawer handles', nameAr: 'مقابض الأدراج', category: 'other', quantity: drawerTotal, unit: 'piece' });
+  for (const item of project.furniture) {
+    if (item.kind === 'bed') {
+      items.push({ id: `HW-${item.id}-MECHANISM`, name: `${item.name} — hydraulic lift mechanism`, nameAr: `${item.name} — ميكانيزم رفع هيدروليكي`, category: 'mechanism', quantity: 1, unit: 'set' });
+      items.push({ id: `HW-${item.id}-LEGS`, name: `${item.name} — legs`, nameAr: `${item.name} — أرجل`, category: 'leg', quantity: 6, unit: 'piece' });
+      items.push({ id: `HW-${item.id}-RUBBER-STRIP`, name: `${item.name} — rubber bumper strip`, nameAr: `${item.name} — شريط مطاطي`, category: 'trim', quantity: 1, unit: 'set' });
+    } else if (item.kind === 'nightstand') {
+      const drawerTotal = item.spec.drawerCount * item.spec.quantity;
+      if (drawerTotal > 0) {
+        items.push({ id: `HW-${item.id}-RUNNERS`, name: `${item.name} — ball-bearing drawer slides`, nameAr: `${item.name} — سكك أدراج`, category: 'runner', quantity: drawerTotal, unit: 'pair' });
+        items.push({ id: `HW-${item.id}-HANDLES`, name: `${item.name} — drawer handles`, nameAr: `${item.name} — مقابض الأدراج`, category: 'other', quantity: drawerTotal, unit: 'piece' });
+      }
+      items.push({ id: `HW-${item.id}-LEGS`, name: `${item.name} — legs`, nameAr: `${item.name} — أرجل`, category: 'leg', quantity: item.spec.quantity * 4, unit: 'piece' });
     }
-    items.push({ id: 'HW-NS-LEGS', name: 'Nightstand legs', nameAr: 'أرجل الكومودينو', category: 'leg', quantity: project.nightstand.quantity * 4, unit: 'piece' });
   }
 
   const fastenerCounts = new Map<JoinType, number>();

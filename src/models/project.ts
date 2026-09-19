@@ -12,7 +12,6 @@ export interface MattressSpec {
 export type BackMaterialKind = 'wood' | 'upholstered' | 'rattan';
 
 export interface BedSpec {
-  enabled: boolean;
   mattress: MattressSpec;
   /** Thickness of the boards that wrap the mattress (sides/head/foot) — also inflates mattress size to outer size. */
   sideThicknessMm: number;
@@ -26,7 +25,6 @@ export interface BedSpec {
 }
 
 export interface NightstandSpec {
-  enabled: boolean;
   quantity: number;
   width: number;
   depth: number;
@@ -55,20 +53,35 @@ export interface FreePart {
   notes?: string;
 }
 
-export type FreeFurnitureCategory =
-  | 'wardrobe'
-  | 'dressing-table'
-  | 'dining-table'
-  | 'kitchen-unit'
-  | 'other';
+/** Every furniture kind the picker offers. Bed/nightstand carry a parametric spec; the rest are manual "free parts". */
+export type FurnitureKind = 'bed' | 'nightstand' | 'wardrobe' | 'dressing-table' | 'dining-table' | 'kitchen-unit' | 'other';
+
+export type FreeFurnitureKind = Exclude<FurnitureKind, 'bed' | 'nightstand'>;
+
+export interface BedFurnitureItem {
+  id: string;
+  kind: 'bed';
+  name: string;
+  spec: BedSpec;
+}
+
+export interface NightstandFurnitureItem {
+  id: string;
+  kind: 'nightstand';
+  name: string;
+  spec: NightstandSpec;
+}
 
 /** "قطع حرة" mode: manual per-part dimensions for any furniture item, feeding the same pipeline. */
 export interface FreeFurnitureItem {
   id: string;
+  kind: FreeFurnitureKind;
   name: string;
-  category: FreeFurnitureCategory;
   parts: FreePart[];
 }
+
+/** One entry in the project's furniture list — the single place every piece (however many, whatever kind) lives. */
+export type FurnitureItem = BedFurnitureItem | NightstandFurnitureItem | FreeFurnitureItem;
 
 export interface NestingSettings {
   kerfMm: number;
@@ -84,9 +97,7 @@ export function defaultEdgeBanding(): EdgeBanding {
 export interface Project {
   id: string;
   name: string;
-  bed: BedSpec;
-  nightstand: NightstandSpec;
-  freeFurniture: FreeFurnitureItem[];
+  furniture: FurnitureItem[];
   materials: Material[];
   boards: Board[];
   nesting: NestingSettings;
