@@ -31,6 +31,7 @@ export function createDefaultProject(): Project {
       drawerFrontGapMm: 3,
       slideRunnerClearanceMm: 13,
       materialId: 'MAT-MEL-18',
+      thinMaterialId: 'MAT-MDF-6',
     },
     freeFurniture: [],
     materials: [

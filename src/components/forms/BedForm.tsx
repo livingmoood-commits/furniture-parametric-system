@@ -1,5 +1,6 @@
 import type { BedSpec } from '../../models';
 import { NumberField } from './fields';
+import { BedIcon } from '../icons';
 
 interface Props {
   bed: BedSpec;
@@ -14,7 +15,7 @@ export function BedForm({ bed, onChange }: Props) {
       <legend>
         <label className="switch">
           <input type="checkbox" checked={bed.enabled} onChange={(e) => set('enabled', e.target.checked)} />
-          السرير (Bed)
+          <BedIcon /> السرير (Bed)
         </label>
       </legend>
       {bed.enabled && (

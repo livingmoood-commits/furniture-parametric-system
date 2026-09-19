@@ -1,12 +1,14 @@
-import type { NightstandSpec } from '../../models';
-import { NumberField } from './fields';
+import type { Material, NightstandSpec } from '../../models';
+import { NumberField, SelectField } from './fields';
+import { NightstandIcon } from '../icons';
 
 interface Props {
   nightstand: NightstandSpec;
+  materials: Material[];
   onChange: (ns: NightstandSpec) => void;
 }
 
-export function NightstandForm({ nightstand, onChange }: Props) {
+export function NightstandForm({ nightstand, materials, onChange }: Props) {
   const set = <K extends keyof NightstandSpec>(key: K, value: NightstandSpec[K]) => onChange({ ...nightstand, [key]: value });
 
   return (
@@ -14,7 +16,7 @@ export function NightstandForm({ nightstand, onChange }: Props) {
       <legend>
         <label className="switch">
           <input type="checkbox" checked={nightstand.enabled} onChange={(e) => set('enabled', e.target.checked)} />
-          الكومودينو (Nightstand)
+          <NightstandIcon /> الكومودينو (Nightstand)
         </label>
       </legend>
       {nightstand.enabled && (
@@ -27,6 +29,12 @@ export function NightstandForm({ nightstand, onChange }: Props) {
           <NumberField label="عدد الأدراج" value={nightstand.drawerCount} min={0} onChange={(v) => set('drawerCount', Math.max(0, v))} />
           <NumberField label="فراغ واجهة الدرج (مم)" value={nightstand.drawerFrontGapMm} onChange={(v) => set('drawerFrontGapMm', v)} />
           <NumberField label="فراغ سكة الدرج (مم)" value={nightstand.slideRunnerClearanceMm} onChange={(v) => set('slideRunnerClearanceMm', v)} />
+          <SelectField
+            label="خامة الظهر وقواعد الأدراج (رقيقة)"
+            value={nightstand.thinMaterialId}
+            options={materials.map((m) => ({ value: m.id, label: m.nameAr }))}
+            onChange={(v) => set('thinMaterialId', v)}
+          />
         </div>
       )}
     </fieldset>

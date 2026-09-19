@@ -7,13 +7,19 @@ export interface NightstandGenerationResult {
   components: Component[];
 }
 
-const thinBottomThicknessMm = (sideThicknessMm: number) => Math.min(sideThicknessMm, 6);
+export interface ThinMaterial {
+  id: string;
+  thicknessMm: number;
+}
 
 /**
  * Generates one full carcass + drawer set per unit. `nightstand.quantity` copies get
  * distinct NS-01-..., NS-02-... id prefixes but come from the exact same geometry function.
+ * `thinMaterial` is a distinct, thinner board (e.g. 6mm MDF) for the back panel and drawer
+ * bottoms — tagging them with the main carcass material at a fake thickness would leave
+ * them with no matching board to nest on.
  */
-export function generateNightstandParts(ns: NightstandSpec): NightstandGenerationResult {
+export function generateNightstandParts(ns: NightstandSpec, thinMaterial: ThinMaterial): NightstandGenerationResult {
   const geo = deriveNightstandGeometry(ns);
   const parts: Part[] = [];
   const components: Component[] = [];
@@ -63,9 +69,9 @@ export function generateNightstandParts(ns: NightstandSpec): NightstandGeneratio
       name: `Nightstand ${unit} back panel`,
       nameAr: `ظهر الكومودينو ${unit}`,
       componentId,
-      dimensions: { length: geo.carcassInnerWidth, width: ns.height - 2 * ns.sideThicknessMm, thicknessMm: thinBottomThicknessMm(ns.sideThicknessMm) },
+      dimensions: { length: geo.carcassInnerWidth, width: ns.height - 2 * ns.sideThicknessMm, thicknessMm: thinMaterial.thicknessMm },
       quantity: 1,
-      materialId: ns.materialId,
+      materialId: thinMaterial.id,
       grainDirection: 'none',
       rotationAllowed: true,
       edgeBanding: defaultEdgeBanding(),
@@ -133,9 +139,9 @@ export function generateNightstandParts(ns: NightstandSpec): NightstandGeneratio
         name: `Nightstand ${unit} drawer ${i + 1} box bottom`,
         nameAr: `قاعدة صندوق الدرج ${i + 1} — كومودينو ${unit}`,
         componentId,
-        dimensions: { length: drawer.boxWidth, width: drawer.boxDepth, thicknessMm: thinBottomThicknessMm(ns.sideThicknessMm) },
+        dimensions: { length: drawer.boxWidth, width: drawer.boxDepth, thicknessMm: thinMaterial.thicknessMm },
         quantity: 1,
-        materialId: ns.materialId,
+        materialId: thinMaterial.id,
         grainDirection: 'none',
         rotationAllowed: true,
         edgeBanding: defaultEdgeBanding(),

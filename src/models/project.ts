@@ -38,6 +38,8 @@ export interface NightstandSpec {
   /** Clearance each side of a drawer box for its slide runner. */
   slideRunnerClearanceMm: number;
   materialId: string;
+  /** Thin stock (back panel, drawer bottoms) — a distinct, thinner material from the carcass. */
+  thinMaterialId: string;
 }
 
 export interface FreePart {

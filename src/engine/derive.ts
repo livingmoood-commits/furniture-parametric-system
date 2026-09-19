@@ -44,7 +44,11 @@ export function deriveProject(project: Project): DerivedProject {
   }
 
   if (project.nightstand.enabled) {
-    const nsGen = generateNightstandParts(project.nightstand);
+    const thinMaterial = project.materials.find((m) => m.id === project.nightstand.thinMaterialId);
+    const nsGen = generateNightstandParts(project.nightstand, {
+      id: project.nightstand.thinMaterialId,
+      thicknessMm: thinMaterial?.thicknessMm ?? project.nightstand.sideThicknessMm,
+    });
     parts.push(...nsGen.parts);
     components.push(...nsGen.components);
   }
