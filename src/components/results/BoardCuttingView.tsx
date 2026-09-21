@@ -33,10 +33,16 @@ export function BoardCuttingView({ boards, materialNames, parts }: Props) {
             {b.placements.map((p) => {
               const part = partById.get(p.partId);
               const baseLabel = part?.nameAr ?? part?.name ?? p.partId;
-              const label = part && part.quantity > 1 ? `${baseLabel} #${p.instanceIndex + 1}` : baseLabel;
+              const label = part && part.quantity > 1 ? `${baseLabel} #${p.instanceIndex + 1}${p.rotated ? ' ↻' : ''}` : `${baseLabel}${p.rotated ? ' ↻' : ''}`;
+              const dimsLabel = `${Math.round(p.length)}×${Math.round(p.width)}`;
               const clipId = `clip-${p.partId}-${p.instanceIndex}`;
               const rotateText = p.length < p.width;
-              const fontSize = Math.max(9, Math.min(rotateText ? p.width : p.length, rotateText ? p.length : p.width) / 7);
+              const shortSide = Math.min(p.length, p.width);
+              const longSide = Math.max(p.length, p.width);
+              // Below this, the name never fits alongside the dimensions — show only the
+              // (short, always-useful) dimensions rather than clipping both into mush.
+              const nameFits = shortSide > 90 && longSide > 220;
+              const fontSize = Math.max(9, Math.min(longSide / 9, shortSide / (nameFits ? 3.2 : 1.8)));
               const cx = p.x + p.length / 2;
               const cy = p.y + p.width / 2;
 
@@ -46,17 +52,21 @@ export function BoardCuttingView({ boards, materialNames, parts }: Props) {
                     <rect x={p.x} y={p.y} width={p.length} height={p.width} />
                   </clipPath>
                   <rect x={p.x} y={p.y} width={p.length} height={p.width} fill="#c9a67a" stroke="#2b2a27" strokeWidth={2} />
-                  <text
-                    x={cx}
-                    y={cy}
-                    fontSize={fontSize}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    clipPath={`url(#${clipId})`}
-                    transform={rotateText ? `rotate(-90 ${cx} ${cy})` : undefined}
-                  >
-                    {label}
-                    {p.rotated ? ' ↻' : ''}
+                  <text x={cx} y={cy} fontSize={fontSize} textAnchor="middle" clipPath={`url(#${clipId})`} transform={rotateText ? `rotate(-90 ${cx} ${cy})` : undefined}>
+                    {nameFits ? (
+                      <>
+                        <tspan x={cx} dy="-0.5em">
+                          {dimsLabel}
+                        </tspan>
+                        <tspan x={cx} dy="1.15em">
+                          {label}
+                        </tspan>
+                      </>
+                    ) : (
+                      <tspan x={cx} dy="0.32em">
+                        {dimsLabel}
+                      </tspan>
+                    )}
                   </text>
                 </g>
               );
