@@ -18,6 +18,8 @@ import {
   CuttingListIcon,
   ExplodedIcon,
   FinalProductIcon,
+  FullscreenEnterIcon,
+  FullscreenExitIcon,
   HardwareIcon,
   PrintIcon,
   QCIcon,
@@ -94,10 +96,14 @@ function useResizableSidebar() {
   return { width, onPointerDown, resetWidth };
 }
 
+type MaximizedPanel = 'sidebar' | 'main' | null;
+
 function App() {
   const [project, setProject] = useState<Project>(createDefaultProject);
   const [tab, setTab] = useState<Tab>('summary');
+  const [maximized, setMaximized] = useState<MaximizedPanel>(null);
   const sidebar = useResizableSidebar();
+  const toggleMaximize = (panel: 'sidebar' | 'main') => setMaximized((cur) => (cur === panel ? null : panel));
 
   const derived = useMemo(() => deriveProject(project), [project]);
 
@@ -119,61 +125,89 @@ function App() {
         </button>
       </header>
 
-      <div className="app-body">
-        <aside className="app-sidebar" style={{ width: sidebar.width }}>
-          <FurnitureList
-            furniture={project.furniture}
-            materials={project.materials}
-            displayUnit={project.displayUnit}
-            onChange={(furniture) => setProject({ ...project, furniture })}
-          />
-          <MaterialsBoardsForm
-            materials={project.materials}
-            boards={project.boards}
-            displayUnit={project.displayUnit}
-            onMaterialsChange={(materials) => setProject({ ...project, materials })}
-            onBoardsChange={(boards) => setProject({ ...project, boards })}
-          />
-          <NestingSettingsForm
-            nesting={project.nesting}
-            displayUnit={project.displayUnit}
-            onNestingChange={(nesting) => setProject({ ...project, nesting })}
-            onDisplayUnitChange={(displayUnit) => setProject({ ...project, displayUnit })}
-          />
-        </aside>
-
-        <div
-          className="sidebar-resizer"
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="تكبير/تصغير عرض القائمة الجانبية"
-          onPointerDown={sidebar.onPointerDown}
-          onDoubleClick={sidebar.resetWidth}
-          title="اسحب لتغيير العرض — دبل كليك للرجوع للمقاس الافتراضي"
-        />
-
-        <main className="app-main">
-          <nav className="tab-bar">
-            {TABS.map((t) => (
-              <button key={t.id} type="button" className={t.id === tab ? 'tab active' : 'tab'} onClick={() => setTab(t.id)}>
-                <t.icon />
-                {t.label}
+      <div className={`app-body${maximized ? ' has-maximized' : ''}`}>
+        {maximized !== 'main' && (
+          <aside className="app-sidebar" style={{ width: maximized === 'sidebar' ? undefined : sidebar.width }}>
+            <div className="panel-toolbar">
+              <button
+                type="button"
+                className="maximize-btn"
+                onClick={() => toggleMaximize('sidebar')}
+                title={maximized === 'sidebar' ? 'استعادة العرض المقسّم' : 'تكبير القائمة الجانبية لكل الشاشة'}
+              >
+                {maximized === 'sidebar' ? <FullscreenExitIcon /> : <FullscreenEnterIcon />}
+                {maximized === 'sidebar' ? 'استعادة العرض' : 'تكبير القائمة'}
               </button>
-            ))}
-          </nav>
+            </div>
+            <FurnitureList
+              furniture={project.furniture}
+              materials={project.materials}
+              displayUnit={project.displayUnit}
+              onChange={(furniture) => setProject({ ...project, furniture })}
+            />
+            <MaterialsBoardsForm
+              materials={project.materials}
+              boards={project.boards}
+              displayUnit={project.displayUnit}
+              onMaterialsChange={(materials) => setProject({ ...project, materials })}
+              onBoardsChange={(boards) => setProject({ ...project, boards })}
+            />
+            <NestingSettingsForm
+              nesting={project.nesting}
+              displayUnit={project.displayUnit}
+              onNestingChange={(nesting) => setProject({ ...project, nesting })}
+              onDisplayUnitChange={(displayUnit) => setProject({ ...project, displayUnit })}
+            />
+          </aside>
+        )}
 
-          <section className="tab-content">
-            {tab === 'summary' && <SummaryView project={project} derived={derived} />}
-            {tab === 'cutting-list' && <CuttingListView parts={derived.parts} materials={project.materials} displayUnit={project.displayUnit} />}
-            {tab === 'board-cutting' && (
-              <BoardCuttingView boards={derived.nesting.boards} materialNames={materialNames} parts={derived.parts} displayUnit={project.displayUnit} />
-            )}
-            {tab === 'exploded' && <ExplodedView project={project} derived={derived} />}
-            {tab === 'assembly' && <AssemblyView instructions={derived.assembly} />}
-            {tab === 'hardware' && <HardwareView items={derived.hardware} edgeBanding={derived.edgeBanding} materials={project.materials} />}
-            {tab === 'qc' && <QCView items={derived.qc} unplaced={derived.nesting.unplacedParts} />}
-          </section>
-        </main>
+        {!maximized && (
+          <div
+            className="sidebar-resizer"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="تكبير/تصغير عرض القائمة الجانبية"
+            onPointerDown={sidebar.onPointerDown}
+            onDoubleClick={sidebar.resetWidth}
+            title="اسحب لتغيير العرض — دبل كليك للرجوع للمقاس الافتراضي"
+          />
+        )}
+
+        {maximized !== 'sidebar' && (
+          <main className="app-main">
+            <div className="main-toolbar">
+              <nav className="tab-bar">
+                {TABS.map((t) => (
+                  <button key={t.id} type="button" className={t.id === tab ? 'tab active' : 'tab'} onClick={() => setTab(t.id)}>
+                    <t.icon />
+                    {t.label}
+                  </button>
+                ))}
+              </nav>
+              <button
+                type="button"
+                className="maximize-btn"
+                onClick={() => toggleMaximize('main')}
+                title={maximized === 'main' ? 'استعادة العرض المقسّم' : 'تكبير منطقة النتائج لكل الشاشة'}
+              >
+                {maximized === 'main' ? <FullscreenExitIcon /> : <FullscreenEnterIcon />}
+                {maximized === 'main' ? 'استعادة العرض' : 'تكبير النتائج'}
+              </button>
+            </div>
+
+            <section className="tab-content">
+              {tab === 'summary' && <SummaryView project={project} derived={derived} />}
+              {tab === 'cutting-list' && <CuttingListView parts={derived.parts} materials={project.materials} displayUnit={project.displayUnit} />}
+              {tab === 'board-cutting' && (
+                <BoardCuttingView boards={derived.nesting.boards} materialNames={materialNames} parts={derived.parts} displayUnit={project.displayUnit} />
+              )}
+              {tab === 'exploded' && <ExplodedView project={project} derived={derived} />}
+              {tab === 'assembly' && <AssemblyView instructions={derived.assembly} />}
+              {tab === 'hardware' && <HardwareView items={derived.hardware} edgeBanding={derived.edgeBanding} materials={project.materials} />}
+              {tab === 'qc' && <QCView items={derived.qc} unplaced={derived.nesting.unplacedParts} />}
+            </section>
+          </main>
+        )}
       </div>
     </div>
   );
