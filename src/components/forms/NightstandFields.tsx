@@ -1,25 +1,27 @@
-import type { Material, NightstandSpec } from '../../models';
-import { NumberField, SelectField } from './fields';
+import type { DisplayUnit, Material, NightstandSpec } from '../../models';
+import { LengthField, NumberField, SelectField } from './fields';
 
 interface Props {
   spec: NightstandSpec;
   materials: Material[];
+  displayUnit: DisplayUnit;
   onChange: (spec: NightstandSpec) => void;
 }
 
-export function NightstandFields({ spec, materials, onChange }: Props) {
+export function NightstandFields({ spec, materials, displayUnit, onChange }: Props) {
   const set = <K extends keyof NightstandSpec>(key: K, value: NightstandSpec[K]) => onChange({ ...spec, [key]: value });
+  const u = displayUnit;
 
   return (
     <div className="field-grid">
       <NumberField label="العدد" value={spec.quantity} min={1} onChange={(v) => set('quantity', Math.max(1, v))} />
-      <NumberField label="العرض (مم)" value={spec.width} onChange={(v) => set('width', v)} />
-      <NumberField label="العمق (مم)" value={spec.depth} onChange={(v) => set('depth', v)} />
-      <NumberField label="الارتفاع (مم)" value={spec.height} onChange={(v) => set('height', v)} />
-      <NumberField label="سمك الجوانب (مم)" value={spec.sideThicknessMm} onChange={(v) => set('sideThicknessMm', v)} />
+      <LengthField label="العرض" unit={u} valueMm={spec.width} onChangeMm={(v) => set('width', v)} />
+      <LengthField label="العمق" unit={u} valueMm={spec.depth} onChangeMm={(v) => set('depth', v)} />
+      <LengthField label="الارتفاع" unit={u} valueMm={spec.height} onChangeMm={(v) => set('height', v)} />
+      <LengthField label="سمك الجوانب" unit={u} valueMm={spec.sideThicknessMm} onChangeMm={(v) => set('sideThicknessMm', v)} />
       <NumberField label="عدد الأدراج" value={spec.drawerCount} min={0} onChange={(v) => set('drawerCount', Math.max(0, v))} />
-      <NumberField label="فراغ واجهة الدرج (مم)" value={spec.drawerFrontGapMm} onChange={(v) => set('drawerFrontGapMm', v)} />
-      <NumberField label="فراغ سكة الدرج (مم)" value={spec.slideRunnerClearanceMm} onChange={(v) => set('slideRunnerClearanceMm', v)} />
+      <LengthField label="فراغ واجهة الدرج" unit={u} valueMm={spec.drawerFrontGapMm} onChangeMm={(v) => set('drawerFrontGapMm', v)} />
+      <LengthField label="فراغ سكة الدرج" unit={u} valueMm={spec.slideRunnerClearanceMm} onChangeMm={(v) => set('slideRunnerClearanceMm', v)} />
       <SelectField
         label="خامة الهيكل"
         value={spec.materialId}

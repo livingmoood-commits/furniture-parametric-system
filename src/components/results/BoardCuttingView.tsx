@@ -1,10 +1,19 @@
 import { useMemo } from 'react';
-import type { BoardInstance, Part } from '../../models';
+import type { BoardInstance, DisplayUnit, Part } from '../../models';
+import { mmToDisplay } from '../../engine/units';
+import { FullscreenSection } from '../FullscreenSection';
 
 interface Props {
   boards: BoardInstance[];
   materialNames: Record<string, string>;
   parts: Part[];
+  displayUnit: DisplayUnit;
+}
+
+function fmt(mm: number, unit: DisplayUnit): string {
+  const factor = unit === 'cm' ? 10 : 1;
+  const v = Math.round(mmToDisplay(mm, unit) * factor) / factor;
+  return `${v}`;
 }
 
 /**
@@ -13,8 +22,9 @@ interface Props {
  * Every label is clipped to its own rectangle so a narrow neighbouring piece can never
  * bleed its text into the piece next to it.
  */
-export function BoardCuttingView({ boards, materialNames, parts }: Props) {
+export function BoardCuttingView({ boards, materialNames, parts, displayUnit }: Props) {
   const partById = useMemo(() => new Map(parts.map((p) => [p.id, p])), [parts]);
+  const unitSuffix = displayUnit === 'cm' ? 'سم' : 'مم';
 
   if (boards.length === 0) {
     return <p className="empty-row">مفيش ألواح لسه — كمّل بيانات المشروع الأول.</p>;
@@ -23,9 +33,10 @@ export function BoardCuttingView({ boards, materialNames, parts }: Props) {
   return (
     <div className="board-grid">
       {boards.map((b) => (
-        <div className="board-card" key={b.boardInstanceId}>
+        <FullscreenSection className="board-card" key={b.boardInstanceId}>
           <div className="board-card-header">
-            <strong>{b.boardInstanceId}</strong> — {materialNames[b.materialId] ?? b.materialId} — {b.length}×{b.width}×{b.thicknessMm}مم
+            <strong>{b.boardInstanceId}</strong> — {materialNames[b.materialId] ?? b.materialId} — {fmt(b.length, displayUnit)}×{fmt(b.width, displayUnit)}
+            {unitSuffix}×{b.thicknessMm}مم
             <span className="eff">كفاءة {b.efficiencyPct.toFixed(1)}%</span>
           </div>
           <svg viewBox={`0 0 ${b.length} ${b.width}`} width="100%" height={Math.max(320, b.width * 0.34)} preserveAspectRatio="xMidYMid meet">
@@ -36,10 +47,11 @@ export function BoardCuttingView({ boards, materialNames, parts }: Props) {
               const label = part && part.quantity > 1 ? `${baseLabel} #${p.instanceIndex + 1}${p.rotated ? ' ↻' : ''}` : `${baseLabel}${p.rotated ? ' ↻' : ''}`;
               // Always the part's OWN length/width (matching the cutting-list columns), never
               // the as-drawn footprint — a rotated piece would otherwise show ط/ع swapped
-              // relative to what the cutting list says for the exact same part.
+              // relative to what the cutting list says for the exact same part. Respects the
+              // same mm/cm toggle as the rest of the app, not hardcoded mm.
               const partLength = part?.dimensions.length ?? p.length;
               const partWidth = part?.dimensions.width ?? p.width;
-              const dimsLabel = `ط${Math.round(partLength)}×ع${Math.round(partWidth)}`;
+              const dimsLabel = `ط${fmt(partLength, displayUnit)}×ع${fmt(partWidth, displayUnit)}`;
               const clipId = `clip-${p.partId}-${p.instanceIndex}`;
               const rotateText = p.length < p.width;
               const shortSide = Math.min(p.length, p.width);
@@ -77,7 +89,7 @@ export function BoardCuttingView({ boards, materialNames, parts }: Props) {
               );
             })}
           </svg>
-        </div>
+        </FullscreenSection>
       ))}
     </div>
   );

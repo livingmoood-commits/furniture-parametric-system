@@ -321,6 +321,7 @@ button.danger {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px;
+  padding-top: 40px;
   background: var(--panel);
 }
 .board-card-header {
@@ -333,6 +334,42 @@ button.danger {
 .eff {
   color: var(--ok);
   font-weight: 600;
+}
+
+.fullscreen-host {
+  position: relative;
+}
+.fullscreen-btn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 3;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px;
+  line-height: 0;
+  cursor: pointer;
+  color: var(--ink);
+}
+.fullscreen-btn:hover {
+  background: var(--accent-light);
+}
+.fullscreen-host.is-fullscreen {
+  background: var(--panel);
+  padding: 44px 24px 24px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+.fullscreen-host.is-fullscreen svg {
+  flex: 1;
+  width: 100% !important;
+  height: calc(100vh - 140px) !important;
+  max-height: none;
+}
+.fullscreen-host.is-fullscreen .legend {
+  font-size: 15px;
 }
 
 .explode-slider {
@@ -358,6 +395,7 @@ button.danger {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px;
+  padding-top: 36px;
   background: var(--panel);
 }
 .legend {

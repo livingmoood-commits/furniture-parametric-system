@@ -1,5 +1,5 @@
 import type { DisplayUnit, NestingSettings } from '../../models';
-import { NumberField, SelectField } from './fields';
+import { LengthField, SelectField } from './fields';
 import { SettingsIcon } from '../icons';
 
 interface Props {
@@ -16,8 +16,8 @@ export function NestingSettingsForm({ nesting, displayUnit, onNestingChange, onD
         <SettingsIcon /> إعدادات التقطيع والعرض (Nesting &amp; Display)
       </legend>
       <div className="field-grid">
-        <NumberField label="الكيرف - Kerf (مم)" value={nesting.kerfMm} onChange={(v) => onNestingChange({ ...nesting, kerfMm: v })} />
-        <NumberField label="هامش حافة اللوح (مم)" value={nesting.edgeMarginMm} onChange={(v) => onNestingChange({ ...nesting, edgeMarginMm: v })} />
+        <LengthField label="الكيرف - Kerf" unit={displayUnit} valueMm={nesting.kerfMm} onChangeMm={(v) => onNestingChange({ ...nesting, kerfMm: v })} />
+        <LengthField label="هامش حافة اللوح" unit={displayUnit} valueMm={nesting.edgeMarginMm} onChangeMm={(v) => onNestingChange({ ...nesting, edgeMarginMm: v })} />
         <SelectField
           label="وحدة العرض"
           value={displayUnit}

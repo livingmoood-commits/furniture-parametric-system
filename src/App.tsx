@@ -121,10 +121,16 @@ function App() {
 
       <div className="app-body">
         <aside className="app-sidebar" style={{ width: sidebar.width }}>
-          <FurnitureList furniture={project.furniture} materials={project.materials} onChange={(furniture) => setProject({ ...project, furniture })} />
+          <FurnitureList
+            furniture={project.furniture}
+            materials={project.materials}
+            displayUnit={project.displayUnit}
+            onChange={(furniture) => setProject({ ...project, furniture })}
+          />
           <MaterialsBoardsForm
             materials={project.materials}
             boards={project.boards}
+            displayUnit={project.displayUnit}
             onMaterialsChange={(materials) => setProject({ ...project, materials })}
             onBoardsChange={(boards) => setProject({ ...project, boards })}
           />
@@ -159,7 +165,9 @@ function App() {
           <section className="tab-content">
             {tab === 'summary' && <SummaryView project={project} derived={derived} />}
             {tab === 'cutting-list' && <CuttingListView parts={derived.parts} materials={project.materials} displayUnit={project.displayUnit} />}
-            {tab === 'board-cutting' && <BoardCuttingView boards={derived.nesting.boards} materialNames={materialNames} parts={derived.parts} />}
+            {tab === 'board-cutting' && (
+              <BoardCuttingView boards={derived.nesting.boards} materialNames={materialNames} parts={derived.parts} displayUnit={project.displayUnit} />
+            )}
             {tab === 'exploded' && <ExplodedView project={project} derived={derived} />}
             {tab === 'assembly' && <AssemblyView instructions={derived.assembly} />}
             {tab === 'hardware' && <HardwareView items={derived.hardware} edgeBanding={derived.edgeBanding} materials={project.materials} />}

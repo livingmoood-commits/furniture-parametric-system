@@ -1,10 +1,11 @@
-import type { Board, Material, MaterialType } from '../../models';
-import { NumberField, SelectField, TextField } from './fields';
+import type { Board, DisplayUnit, Material, MaterialType } from '../../models';
+import { LengthField, NumberField, SelectField, TextField } from './fields';
 import { MaterialsIcon } from '../icons';
 
 interface Props {
   materials: Material[];
   boards: Board[];
+  displayUnit: DisplayUnit;
   onMaterialsChange: (materials: Material[]) => void;
   onBoardsChange: (boards: Board[]) => void;
 }
@@ -21,7 +22,7 @@ const MATERIAL_TYPE_OPTIONS: Array<{ value: MaterialType; label: string }> = [
 let seq = 1000;
 const nextId = (prefix: string) => `${prefix}-${seq++}`;
 
-export function MaterialsBoardsForm({ materials, boards, onMaterialsChange, onBoardsChange }: Props) {
+export function MaterialsBoardsForm({ materials, boards, displayUnit, onMaterialsChange, onBoardsChange }: Props) {
   const updateMaterial = (id: string, patch: Partial<Material>) =>
     onMaterialsChange(materials.map((m) => (m.id === id ? { ...m, ...patch } : m)));
 
@@ -55,7 +56,7 @@ export function MaterialsBoardsForm({ materials, boards, onMaterialsChange, onBo
           <div className="sub-item" key={m.id}>
             <div className="field-grid">
               <TextField label="الاسم بالعربي" value={m.nameAr} onChange={(v) => updateMaterial(m.id, { nameAr: v })} />
-              <NumberField label="السمك (مم)" value={m.thicknessMm} onChange={(v) => updateMaterial(m.id, { thicknessMm: v })} />
+              <LengthField label="السمك" unit={displayUnit} valueMm={m.thicknessMm} onChangeMm={(v) => updateMaterial(m.id, { thicknessMm: v })} />
               <SelectField label="النوع" value={m.type} options={MATERIAL_TYPE_OPTIONS} onChange={(v) => updateMaterial(m.id, { type: v })} />
             </div>
             <button type="button" className="danger" onClick={() => removeMaterial(m.id)}>
@@ -79,8 +80,8 @@ export function MaterialsBoardsForm({ materials, boards, onMaterialsChange, onBo
                 options={materials.map((m) => ({ value: m.id, label: m.nameAr }))}
                 onChange={(v) => updateBoard(b.id, { materialId: v, thicknessMm: materials.find((m) => m.id === v)?.thicknessMm ?? b.thicknessMm })}
               />
-              <NumberField label="الطول (مم)" value={b.length} onChange={(v) => updateBoard(b.id, { length: v })} />
-              <NumberField label="العرض (مم)" value={b.width} onChange={(v) => updateBoard(b.id, { width: v })} />
+              <LengthField label="الطول" unit={displayUnit} valueMm={b.length} onChangeMm={(v) => updateBoard(b.id, { length: v })} />
+              <LengthField label="العرض" unit={displayUnit} valueMm={b.width} onChangeMm={(v) => updateBoard(b.id, { width: v })} />
               <NumberField label="الكمية المتاحة" value={b.qtyAvailable} min={0} onChange={(v) => updateBoard(b.id, { qtyAvailable: v })} />
             </div>
             <button type="button" className="danger" onClick={() => removeBoard(b.id)}>

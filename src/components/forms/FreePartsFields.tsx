@@ -1,10 +1,11 @@
-import type { FreeFurnitureItem, FreePart, GrainDirection, Material } from '../../models';
+import type { DisplayUnit, FreeFurnitureItem, FreePart, GrainDirection, Material } from '../../models';
 import { defaultEdgeBanding } from '../../models';
-import { NumberField, SelectField, TextField } from './fields';
+import { LengthField, NumberField, SelectField, TextField } from './fields';
 
 interface Props {
   item: FreeFurnitureItem;
   materials: Material[];
+  displayUnit: DisplayUnit;
   onChange: (patch: Partial<FreeFurnitureItem>) => void;
 }
 
@@ -17,7 +18,7 @@ const GRAIN_OPTIONS: Array<{ value: GrainDirection; label: string }> = [
 let seq = 4000;
 const nextId = () => `FP-${seq++}`;
 
-export function FreePartsFields({ item, materials, onChange }: Props) {
+export function FreePartsFields({ item, materials, displayUnit, onChange }: Props) {
   const addPart = () => {
     const part: FreePart = {
       id: nextId(),
@@ -43,9 +44,9 @@ export function FreePartsFields({ item, materials, onChange }: Props) {
         <div className="sub-item" key={p.id}>
           <div className="field-grid">
             <TextField label="الاسم" value={p.name} onChange={(v) => updatePart(p.id, { name: v })} />
-            <NumberField label="الطول (مم)" value={p.length} onChange={(v) => updatePart(p.id, { length: v })} />
-            <NumberField label="العرض (مم)" value={p.width} onChange={(v) => updatePart(p.id, { width: v })} />
-            <NumberField label="السمك (مم)" value={p.thicknessMm} onChange={(v) => updatePart(p.id, { thicknessMm: v })} />
+            <LengthField label="الطول" unit={displayUnit} valueMm={p.length} onChangeMm={(v) => updatePart(p.id, { length: v })} />
+            <LengthField label="العرض" unit={displayUnit} valueMm={p.width} onChangeMm={(v) => updatePart(p.id, { width: v })} />
+            <LengthField label="السمك" unit={displayUnit} valueMm={p.thicknessMm} onChangeMm={(v) => updatePart(p.id, { thicknessMm: v })} />
             <NumberField label="الكمية" value={p.quantity} min={1} onChange={(v) => updatePart(p.id, { quantity: Math.max(1, v) })} />
             <SelectField
               label="الخامة"

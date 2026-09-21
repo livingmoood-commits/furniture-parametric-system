@@ -3,6 +3,7 @@ import type { Part, Project } from '../../models';
 import type { DerivedProject } from '../../engine/derive';
 import { bedExplodedBoxes, nightstandCarcassBoxes, nightstandDrawerBoxes, type Box3D, type PlacedBox } from '../../engine/explodedLayout';
 import { deriveNightstandGeometry } from '../../engine/rules/nightstandRules';
+import { FullscreenSection } from '../FullscreenSection';
 
 interface Props {
   project: Project;
@@ -188,7 +189,7 @@ export function ExplodedView({ project, derived }: Props) {
           const legendEntries = entries.filter((e) => (seenParts.has(e.part.id) ? false : (seenParts.add(e.part.id), true)));
 
           return (
-            <div className="exploded-card" key={key}>
+            <FullscreenSection className="exploded-card" key={key}>
               <h4>{title}</h4>
               <svg viewBox={viewBox} width="100%" height={300}>
                 {t > 0.02 &&
@@ -210,7 +211,7 @@ export function ExplodedView({ project, derived }: Props) {
                   </li>
                 ))}
               </ul>
-            </div>
+            </FullscreenSection>
           );
         })}
       </div>

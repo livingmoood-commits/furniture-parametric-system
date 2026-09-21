@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { BedFurnitureItem, FreeFurnitureItem, FurnitureItem, FurnitureKind, Material, NightstandFurnitureItem } from '../../models';
+import type { BedFurnitureItem, DisplayUnit, FreeFurnitureItem, FurnitureItem, FurnitureKind, Material, NightstandFurnitureItem } from '../../models';
 import { BedIcon, FreePartsIcon, NightstandIcon } from '../icons';
 import { BedFields } from './BedFields';
 import { NightstandFields } from './NightstandFields';
@@ -9,6 +9,7 @@ import { SelectField, TextField } from './fields';
 interface Props {
   furniture: FurnitureItem[];
   materials: Material[];
+  displayUnit: DisplayUnit;
   onChange: (furniture: FurnitureItem[]) => void;
 }
 
@@ -79,7 +80,7 @@ function kindIcon(kind: FurnitureKind) {
  * manual "free parts" card — but all of it lands in the one `furniture[]` list that
  * `deriveProject()` reads.
  */
-export function FurnitureList({ furniture, materials, onChange }: Props) {
+export function FurnitureList({ furniture, materials, displayUnit, onChange }: Props) {
   const [pendingKind, setPendingKind] = useState<FurnitureKind>('bed');
   const mainMaterialId = materials[0]?.id ?? '';
   const thinMaterialId = materials.find((m) => m.thicknessMm <= 9)?.id ?? mainMaterialId;
@@ -127,10 +128,12 @@ export function FurnitureList({ furniture, materials, onChange }: Props) {
               </button>
             </div>
 
-            {item.kind === 'bed' && <BedFields spec={item.spec} materials={materials} onChange={(spec) => updateItem(item.id, { spec })} />}
-            {item.kind === 'nightstand' && <NightstandFields spec={item.spec} materials={materials} onChange={(spec) => updateItem(item.id, { spec })} />}
+            {item.kind === 'bed' && <BedFields spec={item.spec} materials={materials} displayUnit={displayUnit} onChange={(spec) => updateItem(item.id, { spec })} />}
+            {item.kind === 'nightstand' && (
+              <NightstandFields spec={item.spec} materials={materials} displayUnit={displayUnit} onChange={(spec) => updateItem(item.id, { spec })} />
+            )}
             {item.kind !== 'bed' && item.kind !== 'nightstand' && (
-              <FreePartsFields item={item} materials={materials} onChange={(patch) => updateItem(item.id, patch)} />
+              <FreePartsFields item={item} materials={materials} displayUnit={displayUnit} onChange={(patch) => updateItem(item.id, patch)} />
             )}
           </div>
         ))}

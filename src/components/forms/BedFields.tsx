@@ -1,25 +1,27 @@
-import type { BedSpec, Material } from '../../models';
-import { NumberField, SelectField } from './fields';
+import type { BedSpec, DisplayUnit, Material } from '../../models';
+import { LengthField, SelectField } from './fields';
 
 interface Props {
   spec: BedSpec;
   materials: Material[];
+  displayUnit: DisplayUnit;
   onChange: (spec: BedSpec) => void;
 }
 
-export function BedFields({ spec, materials, onChange }: Props) {
+export function BedFields({ spec, materials, displayUnit, onChange }: Props) {
   const set = <K extends keyof BedSpec>(key: K, value: BedSpec[K]) => onChange({ ...spec, [key]: value });
+  const u = displayUnit;
 
   return (
     <div className="field-grid">
-      <NumberField label="عرض المرتبة (مم)" value={spec.mattress.width} onChange={(v) => set('mattress', { ...spec.mattress, width: v })} />
-      <NumberField label="طول المرتبة (مم)" value={spec.mattress.length} onChange={(v) => set('mattress', { ...spec.mattress, length: v })} />
-      <NumberField label="سمك المرتبة (مم)" value={spec.mattress.thicknessMm} onChange={(v) => set('mattress', { ...spec.mattress, thicknessMm: v })} />
-      <NumberField label="سمك جوانب الهيكل (مم)" value={spec.sideThicknessMm} onChange={(v) => set('sideThicknessMm', v)} />
-      <NumberField label="سمك الفريم (مم)" value={spec.frameThicknessMm} onChange={(v) => set('frameThicknessMm', v)} />
-      <NumberField label="ارتفاع القاعدة (مم)" value={spec.baseHeightMm} onChange={(v) => set('baseHeightMm', v)} />
-      <NumberField label="ارتفاع الظهر (مم)" value={spec.backHeightMm} onChange={(v) => set('backHeightMm', v)} />
-      <NumberField label="فراغ الميكانيزم الهيدروليكي (مم)" value={spec.mechanismClearanceMm} onChange={(v) => set('mechanismClearanceMm', v)} />
+      <LengthField label="عرض المرتبة" unit={u} valueMm={spec.mattress.width} onChangeMm={(v) => set('mattress', { ...spec.mattress, width: v })} />
+      <LengthField label="طول المرتبة" unit={u} valueMm={spec.mattress.length} onChangeMm={(v) => set('mattress', { ...spec.mattress, length: v })} />
+      <LengthField label="سمك المرتبة" unit={u} valueMm={spec.mattress.thicknessMm} onChangeMm={(v) => set('mattress', { ...spec.mattress, thicknessMm: v })} />
+      <LengthField label="سمك جوانب الهيكل" unit={u} valueMm={spec.sideThicknessMm} onChangeMm={(v) => set('sideThicknessMm', v)} />
+      <LengthField label="سمك الفريم" unit={u} valueMm={spec.frameThicknessMm} onChangeMm={(v) => set('frameThicknessMm', v)} />
+      <LengthField label="ارتفاع القاعدة" unit={u} valueMm={spec.baseHeightMm} onChangeMm={(v) => set('baseHeightMm', v)} />
+      <LengthField label="ارتفاع الظهر" unit={u} valueMm={spec.backHeightMm} onChangeMm={(v) => set('backHeightMm', v)} />
+      <LengthField label="فراغ الميكانيزم الهيدروليكي" unit={u} valueMm={spec.mechanismClearanceMm} onChangeMm={(v) => set('mechanismClearanceMm', v)} />
       <SelectField
         label="خامة الهيكل"
         value={spec.materialId}
@@ -47,9 +49,9 @@ export function BedFields({ spec, materials, onChange }: Props) {
       />
       {spec.mattressBaseType === 'slats' && (
         <>
-          <NumberField label="عرض الملة (مم)" value={spec.slatWidthMm} onChange={(v) => set('slatWidthMm', v)} />
-          <NumberField label="الفاصل المستهدف بين الملل (مم)" value={spec.slatGapMm} onChange={(v) => set('slatGapMm', v)} />
-          <NumberField label="سمك الملة (مم)" value={spec.slatThicknessMm} onChange={(v) => set('slatThicknessMm', v)} />
+          <LengthField label="عرض الملة" unit={u} valueMm={spec.slatWidthMm} onChangeMm={(v) => set('slatWidthMm', v)} />
+          <LengthField label="الفاصل المستهدف بين الملل" unit={u} valueMm={spec.slatGapMm} onChangeMm={(v) => set('slatGapMm', v)} />
+          <LengthField label="سمك الملة" unit={u} valueMm={spec.slatThicknessMm} onChangeMm={(v) => set('slatThicknessMm', v)} />
         </>
       )}
     </div>
