@@ -25,9 +25,9 @@ export function bedExplodedBoxes(idPrefix: string, bed: BedSpec, geo: BedDerived
   const boxes: Record<string, Box3D> = {};
   const id = (suffix: string) => `${idPrefix}-${suffix}`;
 
-  const explodeX = geo.outerWidth * 0.6 + 150;
-  const explodeY = geo.outerLength * 0.35 + 150;
-  const explodeZ = bed.baseHeightMm * 1.4 + 150;
+  const explodeX = geo.outerWidth * 0.35 + 100;
+  const explodeY = geo.outerLength * 0.2 + 100;
+  const explodeZ = bed.baseHeightMm * 1.0 + 100;
 
   const sideL: Box3D = { x: 0, y: 0, z: 0, length: bed.sideThicknessMm, width: geo.outerLength, height: bed.baseHeightMm };
   boxes[id('SIDE-L-01')] = lerpBox(sideL, -explodeX, 0, 0, t);
@@ -53,7 +53,7 @@ export function bedExplodedBoxes(idPrefix: string, bed: BedSpec, geo: BedDerived
   }
 
   const backrest: Box3D = { x: bed.frameThicknessMm, y: 0, z: 0, length: geo.backPanel.width, width: bed.frameThicknessMm, height: geo.backPanel.height };
-  boxes[id('BACKREST-01')] = lerpBox(backrest, 0, -explodeY * 1.6, 0, t);
+  boxes[id('BACKREST-01')] = lerpBox(backrest, 0, -explodeY * 1.4, 0, t);
 
   return boxes;
 }
@@ -68,9 +68,9 @@ export function nightstandExplodedBoxes(idPrefix: string, ns: NightstandSpec, t:
   const boxes: Record<string, Box3D> = {};
   const id = (suffix: string) => `${idPrefix}-${suffix}`;
 
-  const explodeX = ns.width * 0.7 + 120;
-  const explodeZ = ns.height * 0.6 + 120;
-  const explodeYBase = ns.depth * 0.9 + 100;
+  const explodeX = ns.width * 0.45 + 80;
+  const explodeZ = ns.height * 0.4 + 80;
+  const explodeYBase = ns.depth * 0.55 + 80;
 
   const sideL: Box3D = { x: 0, y: 0, z: 0, length: ns.sideThicknessMm, width: ns.depth, height: ns.height };
   boxes[id('SIDE-L-01')] = lerpBox(sideL, -explodeX, 0, 0, t);
@@ -96,7 +96,9 @@ export function nightstandExplodedBoxes(idPrefix: string, ns: NightstandSpec, t:
     const dPrefix = `DRAWER-${dIdx}-`;
     // topmost drawer is index 0
     const drawerZ = ns.sideThicknessMm + (drawerCount - 1 - i) * perDrawerHeight;
-    const pullOut = explodeYBase * (1 + i * 0.5); // lower drawers pull out further so all are visible
+    // Negative: the front face is at y=0, so "pulled out" means moving further into negative
+    // y (toward the viewer), never toward +y (which would push the drawer through the back).
+    const pullOut = -explodeYBase * (1 + i * 0.5); // lower drawers pull out further so all are visible
 
     const front: Box3D = { x: ns.sideThicknessMm, y: 0, z: drawerZ, length: geo.carcassInnerWidth, width: ns.sideThicknessMm, height: drawer.frontHeight };
     boxes[id(`${dPrefix}FRONT`)] = lerpBox(front, 0, pullOut, 0, t);
