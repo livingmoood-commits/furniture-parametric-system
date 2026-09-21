@@ -90,6 +90,24 @@ describe('deriveProject — One Source of Truth pipeline', () => {
     expect(derived.nesting.totalBoardsUsed).toBeGreaterThan(0);
   });
 
+  it('every distinct part id has its own Arabic name — no two different parts share a label', () => {
+    // Regression guard: BOX-SIDE-L/BOX-SIDE-R used to be built by spreading one part into
+    // the other and only overriding the English `name`, leaving both with the identical
+    // Arabic nameAr — unreadable on the cutting list and the board drawing alike.
+    const project = createDefaultProject();
+    const derived = deriveProject(project);
+
+    const nameArToIds = new Map<string, Set<string>>();
+    for (const part of derived.parts) {
+      const label = part.nameAr ?? part.name;
+      if (!nameArToIds.has(label)) nameArToIds.set(label, new Set());
+      nameArToIds.get(label)!.add(part.id);
+    }
+    for (const [label, ids] of nameArToIds) {
+      expect(ids.size, `"${label}" is used by ${ids.size} different part ids: ${[...ids].join(', ')}`).toBe(1);
+    }
+  });
+
   it('two bed items in the same project get independent, non-colliding part ids', () => {
     const project = createDefaultProject();
     const bedItem = project.furniture.find((f): f is BedFurnitureItem => f.kind === 'bed')!;

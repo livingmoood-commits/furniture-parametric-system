@@ -34,7 +34,12 @@ export function BoardCuttingView({ boards, materialNames, parts }: Props) {
               const part = partById.get(p.partId);
               const baseLabel = part?.nameAr ?? part?.name ?? p.partId;
               const label = part && part.quantity > 1 ? `${baseLabel} #${p.instanceIndex + 1}${p.rotated ? ' ↻' : ''}` : `${baseLabel}${p.rotated ? ' ↻' : ''}`;
-              const dimsLabel = `${Math.round(p.length)}×${Math.round(p.width)}`;
+              // Always the part's OWN length/width (matching the cutting-list columns), never
+              // the as-drawn footprint — a rotated piece would otherwise show ط/ع swapped
+              // relative to what the cutting list says for the exact same part.
+              const partLength = part?.dimensions.length ?? p.length;
+              const partWidth = part?.dimensions.width ?? p.width;
+              const dimsLabel = `ط${Math.round(partLength)}×ع${Math.round(partWidth)}`;
               const clipId = `clip-${p.partId}-${p.instanceIndex}`;
               const rotateText = p.length < p.width;
               const shortSide = Math.min(p.length, p.width);

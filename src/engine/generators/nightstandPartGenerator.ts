@@ -106,7 +106,7 @@ export function generateNightstandParts(idPrefix: string, itemName: string, ns: 
       const boxSideL: Part = {
         id: `${dPrefix}BOX-SIDE-L`,
         name: `${itemName} ${unit} drawer ${i + 1} box side (L)`,
-        nameAr: `جانب صندوق الدرج ${i + 1} — ${itemName} ${unit}`,
+        nameAr: `جانب صندوق الدرج ${i + 1} (يسار) — ${itemName} ${unit}`,
         componentId,
         dimensions: { length: drawer.boxDepth, width: drawer.boxHeight, thicknessMm: ns.sideThicknessMm },
         quantity: 1,
@@ -117,7 +117,12 @@ export function generateNightstandParts(idPrefix: string, itemName: string, ns: 
         machiningOperations: [],
         assembly: [{ toPartId: `${prefix}SIDE-L-01`, joinType: 'slide-runner', note: 'Ball-bearing drawer slide' }],
       };
-      const boxSideR: Part = { ...boxSideL, id: `${dPrefix}BOX-SIDE-R`, name: `${itemName} ${unit} drawer ${i + 1} box side (R)` };
+      const boxSideR: Part = {
+        ...boxSideL,
+        id: `${dPrefix}BOX-SIDE-R`,
+        name: `${itemName} ${unit} drawer ${i + 1} box side (R)`,
+        nameAr: `جانب صندوق الدرج ${i + 1} (يمين) — ${itemName} ${unit}`,
+      };
       const boxBack: Part = {
         id: `${dPrefix}BOX-BACK`,
         name: `${itemName} ${unit} drawer ${i + 1} box back`,
