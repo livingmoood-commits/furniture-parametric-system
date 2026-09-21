@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import type { Part, Project } from '../../models';
 import type { DerivedProject } from '../../engine/derive';
-import { bedExplodedBoxes, nightstandExplodedBoxes, type Box3D } from '../../engine/explodedLayout';
+import { bedExplodedBoxes, nightstandCarcassBoxes, nightstandDrawerBoxes, type Box3D } from '../../engine/explodedLayout';
+import { deriveNightstandGeometry } from '../../engine/rules/nightstandRules';
 
 interface Props {
   project: Project;
@@ -94,6 +95,10 @@ function zipBoxes(parts: Part[], boxMap: Record<string, Box3D>, assembledMap: Re
  * top, drawers where drawers go) then pull apart along the slider — not a generic stack.
  * A dashed guide line ties each piece back to where it actually sits when assembled, and
  * pieces are painted back-to-front so overlaps read correctly instead of looking jumbled.
+ *
+ * A nightstand's carcass and each of its drawers get SEPARATE small diagrams rather than
+ * one crowded scene — real assembly manuals break multi-part furniture into stages for
+ * exactly this reason: five parts you can actually read beats fifteen parts you can't.
  * Free-form items have no known geometric relationship between their parts, so they still
  * fall back to a simple vertical fan.
  */
@@ -113,14 +118,27 @@ export function ExplodedView({ project, derived }: Props) {
         const entries = zipBoxes(parts, boxMap, assembledMap);
         if (entries.length > 0) result.push({ key: item.id, title: item.name, entries });
       } else if (item.kind === 'nightstand') {
+        const geo = deriveNightstandGeometry(item.spec);
         for (let unit = 1; unit <= item.spec.quantity; unit++) {
           const unitPrefix = `${item.id}-0${unit}`;
           const componentId = `COMP-${unitPrefix}-UNIT`;
-          const boxMap = nightstandExplodedBoxes(unitPrefix, item.spec, t);
-          const assembledMap = nightstandExplodedBoxes(unitPrefix, item.spec, 0);
-          const parts = derived.parts.filter((p) => p.componentId === componentId);
-          const entries = zipBoxes(parts, boxMap, assembledMap);
-          if (entries.length > 0) result.push({ key: componentId, title: `${item.name} ${unit}`, entries });
+          const unitParts = derived.parts.filter((p) => p.componentId === componentId);
+
+          const carcassMap = nightstandCarcassBoxes(unitPrefix, item.spec, t);
+          const carcassAssembled = nightstandCarcassBoxes(unitPrefix, item.spec, 0);
+          const carcassParts = unitParts.filter((p) => !p.id.includes('-DRAWER-'));
+          const carcassEntries = zipBoxes(carcassParts, carcassMap, carcassAssembled);
+          if (carcassEntries.length > 0) result.push({ key: `${componentId}-carcass`, title: `${item.name} ${unit} — الهيكل`, entries: carcassEntries });
+
+          geo.drawers.forEach((drawer, i) => {
+            const drawerMap = nightstandDrawerBoxes(unitPrefix, i, item.spec, drawer, t);
+            const drawerAssembled = nightstandDrawerBoxes(unitPrefix, i, item.spec, drawer, 0);
+            const dIdx = String(i + 1).padStart(2, '0');
+            const prefix = `${unitPrefix}-DRAWER-${dIdx}-`;
+            const drawerParts = unitParts.filter((p) => p.id.startsWith(prefix));
+            const drawerEntries = zipBoxes(drawerParts, drawerMap, drawerAssembled);
+            if (drawerEntries.length > 0) result.push({ key: `${componentId}-drawer-${i}`, title: `${item.name} ${unit} — درج ${i + 1}`, entries: drawerEntries });
+          });
         }
       } else {
         const parts = derived.parts.filter((p) => p.componentId === `COMP-FREE-${item.id}`);
@@ -160,7 +178,7 @@ export function ExplodedView({ project, derived }: Props) {
           return (
             <div className="exploded-card" key={key}>
               <h4>{title}</h4>
-              <svg viewBox={viewBox} width="100%" height={360}>
+              <svg viewBox={viewBox} width="100%" height={300}>
                 {t > 0.02 &&
                   sorted.map(({ part, box, assembledBox }) => {
                     const from = center(assembledBox);
