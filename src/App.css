@@ -335,6 +335,20 @@ button.danger {
   font-weight: 600;
 }
 
+.explode-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 16px;
+  max-width: 480px;
+}
+.explode-slider input[type='range'] {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
 .exploded-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));

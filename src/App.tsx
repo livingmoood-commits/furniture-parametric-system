@@ -160,7 +160,7 @@ function App() {
             {tab === 'summary' && <SummaryView project={project} derived={derived} />}
             {tab === 'cutting-list' && <CuttingListView parts={derived.parts} materials={project.materials} displayUnit={project.displayUnit} />}
             {tab === 'board-cutting' && <BoardCuttingView boards={derived.nesting.boards} materialNames={materialNames} parts={derived.parts} />}
-            {tab === 'exploded' && <ExplodedView components={derived.components} parts={derived.parts} />}
+            {tab === 'exploded' && <ExplodedView project={project} derived={derived} />}
             {tab === 'assembly' && <AssemblyView instructions={derived.assembly} />}
             {tab === 'hardware' && <HardwareView items={derived.hardware} edgeBanding={derived.edgeBanding} materials={project.materials} />}
             {tab === 'qc' && <QCView items={derived.qc} unplaced={derived.nesting.unplacedParts} />}

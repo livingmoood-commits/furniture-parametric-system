@@ -1,15 +1,16 @@
-import { useMemo } from 'react';
-import type { Component, Part } from '../../models';
+import { useMemo, useState } from 'react';
+import type { Part, Project } from '../../models';
+import type { DerivedProject } from '../../engine/derive';
+import { bedExplodedBoxes, nightstandExplodedBoxes, type Box3D } from '../../engine/explodedLayout';
 
 interface Props {
-  components: Component[];
-  parts: Part[];
+  project: Project;
+  derived: DerivedProject;
 }
 
-const SCALE = 0.06;
-const EXPLODE_GAP = 40;
+const SCALE = 0.05;
 const ANGLE = Math.PI / 6;
-const PALETTE = ['#c9a67a', '#b98c5f', '#8f6a45', '#d9c2a0', '#6f5334', '#e3d3b6', '#a97f52'];
+const PALETTE = ['#c9a67a', '#b98c5f', '#8f6a45', '#d9c2a0', '#6f5334', '#e3d3b6', '#a97f52', '#7d5c3a'];
 
 function isoProject(x: number, y: number, z: number) {
   const sx = (x - y) * Math.cos(ANGLE);
@@ -17,16 +18,7 @@ function isoProject(x: number, y: number, z: number) {
   return { sx: sx * SCALE, sy: sy * SCALE };
 }
 
-interface Box {
-  x: number;
-  y: number;
-  z: number;
-  length: number;
-  width: number;
-  height: number;
-}
-
-function corners(b: Box) {
+function corners(b: Box3D) {
   return {
     b000: isoProject(b.x, b.y, b.z),
     b100: isoProject(b.x + b.length, b.y, b.z),
@@ -43,7 +35,7 @@ function poly(pts: Array<{ sx: number; sy: number }>) {
   return pts.map((p) => `${p.sx},${p.sy}`).join(' ');
 }
 
-function BoxIso({ box, fill }: { box: Box; fill: string }) {
+function BoxIso({ box, fill }: { box: Box3D; fill: string }) {
   const c = corners(box);
   return (
     <g>
@@ -54,66 +46,106 @@ function BoxIso({ box, fill }: { box: Box; fill: string }) {
   );
 }
 
+/** Fallback for free-form items: no known geometric relationship, so just fan them vertically. */
+function genericStackBoxes(parts: Part[]): Record<string, Box3D> {
+  let z = 0;
+  const boxes: Record<string, Box3D> = {};
+  for (const p of parts) {
+    const height = Math.max(p.dimensions.thicknessMm, 6);
+    boxes[p.id] = { x: -p.dimensions.length / 2, y: -p.dimensions.width / 2, z, length: p.dimensions.length, width: p.dimensions.width, height };
+    z += height + 40;
+  }
+  return boxes;
+}
+
+interface Card {
+  key: string;
+  title: string;
+  entries: Array<{ part: Part; box: Box3D }>;
+}
+
 /**
- * Simplified exploded diagram: each component's real parts (same length/width/thickness as
- * the cutting list) fanned out vertically with a gap, isometrically projected — not a full
- * physically-accurate 3D reconstruction, but every number on screen is the same derived
- * number used everywhere else.
+ * Bed and nightstand render their REAL assembled shape (sides where sides go, platform on
+ * top, drawers where drawers go) then pull apart along the slider — not a generic stack.
+ * Free-form items have no known geometric relationship between their parts, so they still
+ * fall back to a simple vertical fan.
  */
-export function ExplodedView({ components, parts }: Props) {
-  const cards = useMemo(() => {
-    return components
-      .map((c) => {
-        const cParts = parts.filter((p) => p.componentId === c.id);
-        if (cParts.length === 0) return null;
-        let z = 0;
-        const boxes = cParts.map((p) => {
-          const height = Math.max(p.dimensions.thicknessMm, 6);
-          const box: Box = { x: -p.dimensions.length / 2, y: -p.dimensions.width / 2, z, length: p.dimensions.length, width: p.dimensions.width, height };
-          z += height + EXPLODE_GAP;
-          return { box, part: p };
-        });
+export function ExplodedView({ project, derived }: Props) {
+  const [t, setT] = useState(0.85);
 
-        const pts = boxes.flatMap(({ box }) => {
-          const c2 = corners(box);
-          return Object.values(c2);
-        });
-        const minX = Math.min(...pts.map((p) => p.sx));
-        const maxX = Math.max(...pts.map((p) => p.sx));
-        const minY = Math.min(...pts.map((p) => p.sy));
-        const maxY = Math.max(...pts.map((p) => p.sy));
-        const pad = 20;
-        const viewBox = `${minX - pad} ${minY - pad} ${maxX - minX + 2 * pad} ${maxY - minY + 2 * pad}`;
+  const cards = useMemo<Card[]>(() => {
+    const result: Card[] = [];
 
-        return { component: c, boxes, viewBox };
-      })
-      .filter((x): x is NonNullable<typeof x> => x !== null);
-  }, [components, parts]);
+    for (const item of project.furniture) {
+      if (item.kind === 'bed') {
+        const entry = derived.bedGeometries.find((g) => g.itemId === item.id);
+        if (!entry) continue;
+        const boxMap = bedExplodedBoxes(item.id, item.spec, entry.geometry, t);
+        const parts = derived.parts.filter((p) => p.componentId === `COMP-${item.id}`);
+        const entries = parts.map((part) => ({ part, box: boxMap[part.id] })).filter((e): e is { part: Part; box: Box3D } => !!e.box);
+        if (entries.length > 0) result.push({ key: item.id, title: item.name, entries });
+      } else if (item.kind === 'nightstand') {
+        for (let unit = 1; unit <= item.spec.quantity; unit++) {
+          const unitPrefix = `${item.id}-0${unit}`;
+          const componentId = `COMP-${unitPrefix}-UNIT`;
+          const boxMap = nightstandExplodedBoxes(unitPrefix, item.spec, t);
+          const parts = derived.parts.filter((p) => p.componentId === componentId);
+          const entries = parts.map((part) => ({ part, box: boxMap[part.id] })).filter((e): e is { part: Part; box: Box3D } => !!e.box);
+          if (entries.length > 0) result.push({ key: componentId, title: `${item.name} ${unit}`, entries });
+        }
+      } else {
+        const parts = derived.parts.filter((p) => p.componentId === `COMP-FREE-${item.id}`);
+        if (parts.length === 0) continue;
+        const boxMap = genericStackBoxes(parts);
+        result.push({ key: item.id, title: item.name, entries: parts.map((part) => ({ part, box: boxMap[part.id] })) });
+      }
+    }
+
+    return result;
+  }, [project.furniture, derived.parts, derived.bedGeometries, t]);
 
   if (cards.length === 0) {
     return <p className="empty-row">مفيش مكونات لسه لعرض منظورها المتفكك.</p>;
   }
 
   return (
-    <div className="exploded-grid">
-      {cards.map(({ component, boxes, viewBox }) => (
-        <div className="exploded-card" key={component.id}>
-          <h4>{component.nameAr ?? component.name}</h4>
-          <svg viewBox={viewBox} width="100%" height={320}>
-            {boxes.map(({ box, part }, i) => (
-              <BoxIso key={part.id} box={box} fill={PALETTE[i % PALETTE.length]} />
-            ))}
-          </svg>
-          <ul className="legend">
-            {boxes.map(({ part }, i) => (
-              <li key={part.id}>
-                <span className="swatch" style={{ background: PALETTE[i % PALETTE.length] }} />
-                {part.nameAr ?? part.name}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+    <div>
+      <div className="explode-slider">
+        <span>مجمّع</span>
+        <input type="range" min={0} max={1} step={0.01} value={t} onChange={(e) => setT(Number(e.target.value))} />
+        <span>متفكك بالكامل</span>
+      </div>
+
+      <div className="exploded-grid">
+        {cards.map(({ key, title, entries }) => {
+          const pts = entries.flatMap(({ box }) => Object.values(corners(box)));
+          const minX = Math.min(...pts.map((p) => p.sx));
+          const maxX = Math.max(...pts.map((p) => p.sx));
+          const minY = Math.min(...pts.map((p) => p.sy));
+          const maxY = Math.max(...pts.map((p) => p.sy));
+          const pad = 20;
+          const viewBox = `${minX - pad} ${minY - pad} ${maxX - minX + 2 * pad} ${maxY - minY + 2 * pad}`;
+
+          return (
+            <div className="exploded-card" key={key}>
+              <h4>{title}</h4>
+              <svg viewBox={viewBox} width="100%" height={360}>
+                {entries.map(({ part, box }, i) => (
+                  <BoxIso key={part.id} box={box} fill={PALETTE[i % PALETTE.length]} />
+                ))}
+              </svg>
+              <ul className="legend">
+                {entries.map(({ part }, i) => (
+                  <li key={part.id}>
+                    <span className="swatch" style={{ background: PALETTE[i % PALETTE.length] }} />
+                    {part.nameAr ?? part.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
