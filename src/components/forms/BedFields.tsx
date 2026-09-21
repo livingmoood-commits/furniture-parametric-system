@@ -36,6 +36,22 @@ export function BedFields({ spec, materials, onChange }: Props) {
         ]}
         onChange={(v) => set('backMaterial', v)}
       />
+      <SelectField
+        label="قاعدة الفرش"
+        value={spec.mattressBaseType}
+        options={[
+          { value: 'solid', label: 'لوح مصمت (رفع هيدروليكي)' },
+          { value: 'slats', label: 'ملل خشبية (تهوية)' },
+        ]}
+        onChange={(v) => set('mattressBaseType', v)}
+      />
+      {spec.mattressBaseType === 'slats' && (
+        <>
+          <NumberField label="عرض الملة (مم)" value={spec.slatWidthMm} onChange={(v) => set('slatWidthMm', v)} />
+          <NumberField label="الفاصل المستهدف بين الملل (مم)" value={spec.slatGapMm} onChange={(v) => set('slatGapMm', v)} />
+          <NumberField label="سمك الملة (مم)" value={spec.slatThicknessMm} onChange={(v) => set('slatThicknessMm', v)} />
+        </>
+      )}
     </div>
   );
 }

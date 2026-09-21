@@ -23,6 +23,10 @@ export function createDefaultProject(): Project {
           mechanismClearanceMm: 22,
           backMaterial: 'wood',
           materialId: 'MAT-MEL-18',
+          mattressBaseType: 'solid',
+          slatWidthMm: 100,
+          slatGapMm: 40,
+          slatThicknessMm: 15,
         },
       },
       {

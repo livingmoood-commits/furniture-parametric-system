@@ -45,6 +45,10 @@ function defaultBedSpec(materialId: string): BedFurnitureItem['spec'] {
     mechanismClearanceMm: 22,
     backMaterial: 'wood',
     materialId,
+    mattressBaseType: 'solid',
+    slatWidthMm: 100,
+    slatGapMm: 40,
+    slatThicknessMm: 15,
   };
 }
 

@@ -11,6 +11,9 @@ export interface MattressSpec {
 
 export type BackMaterialKind = 'wood' | 'upholstered' | 'rattan';
 
+/** 'solid' = one flat lift-platform board(s). 'slats' = a row of spaced wooden slats. */
+export type MattressBaseType = 'solid' | 'slats';
+
 export interface BedSpec {
   mattress: MattressSpec;
   /** Thickness of the boards that wrap the mattress (sides/head/foot) — also inflates mattress size to outer size. */
@@ -22,6 +25,11 @@ export interface BedSpec {
   mechanismClearanceMm: number;
   backMaterial: BackMaterialKind;
   materialId: string;
+  mattressBaseType: MattressBaseType;
+  /** Only used when mattressBaseType === 'slats'. */
+  slatWidthMm: number;
+  slatGapMm: number;
+  slatThicknessMm: number;
 }
 
 export interface NightstandSpec {

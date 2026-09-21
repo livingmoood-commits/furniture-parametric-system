@@ -28,7 +28,7 @@ export function BoardCuttingView({ boards, materialNames, parts }: Props) {
             <strong>{b.boardInstanceId}</strong> — {materialNames[b.materialId] ?? b.materialId} — {b.length}×{b.width}×{b.thicknessMm}مم
             <span className="eff">كفاءة {b.efficiencyPct.toFixed(1)}%</span>
           </div>
-          <svg viewBox={`0 0 ${b.length} ${b.width}`} width="100%" height={Math.max(160, b.width * 0.15)} preserveAspectRatio="xMidYMid meet">
+          <svg viewBox={`0 0 ${b.length} ${b.width}`} width="100%" height={Math.max(320, b.width * 0.34)} preserveAspectRatio="xMidYMid meet">
             <rect x={0} y={0} width={b.length} height={b.width} fill="#efe8d8" stroke="#2b2a27" strokeWidth={4} />
             {b.placements.map((p) => {
               const part = partById.get(p.partId);

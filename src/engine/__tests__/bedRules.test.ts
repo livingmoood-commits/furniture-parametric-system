@@ -12,6 +12,10 @@ function makeBed(overrides: Partial<BedSpec> = {}): BedSpec {
     mechanismClearanceMm: 22,
     backMaterial: 'wood',
     materialId: 'MAT-1',
+    mattressBaseType: 'solid',
+    slatWidthMm: 100,
+    slatGapMm: 40,
+    slatThicknessMm: 15,
     ...overrides,
   };
 }
@@ -51,5 +55,21 @@ describe('deriveBedGeometry', () => {
   it('final mattress height is base height plus mattress thickness', () => {
     const geo = deriveBedGeometry(makeBed(), 10000);
     expect(geo.finalMattressHeight).toBe(350 + 250);
+  });
+
+  it('computes an even slat count and gap that fill the storage length', () => {
+    const bed = makeBed({ mattressBaseType: 'slats', slatWidthMm: 100, slatGapMm: 40 });
+    const geo = deriveBedGeometry(bed, 10000);
+    expect(geo.slats).toBeDefined();
+    const slats = geo.slats!;
+    expect(slats.count).toBeGreaterThan(1);
+    // count slats + their gaps must reconstruct the storage length exactly
+    expect(slats.count * slats.slatWidthMm + slats.count * slats.actualGapMm).toBeCloseTo(geo.storageLength, 6);
+    expect(slats.slatLengthMm).toBe(geo.storageWidth);
+  });
+
+  it('does not compute slats for a solid base', () => {
+    const geo = deriveBedGeometry(makeBed({ mattressBaseType: 'solid' }), 10000);
+    expect(geo.slats).toBeUndefined();
   });
 });

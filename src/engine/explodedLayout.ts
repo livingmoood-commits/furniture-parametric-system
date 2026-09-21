@@ -11,6 +11,16 @@ export interface Box3D {
   height: number; // Z extent
 }
 
+/**
+ * One visual box tied to a part id. A part with quantity > 1 (e.g. 12 identical slats,
+ * one Part row in the cutting list) produces several entries sharing the same partId —
+ * arrays (not a Record keyed by id) so repeated instances don't collide with each other.
+ */
+export interface PlacedBox {
+  partId: string;
+  box: Box3D;
+}
+
 function lerpBox(assembled: Box3D, dx: number, dy: number, dz: number, t: number): Box3D {
   return { ...assembled, x: assembled.x + dx * t, y: assembled.y + dy * t, z: assembled.z + dz * t };
 }
@@ -24,39 +34,54 @@ function lerpBox(assembled: Box3D, dx: number, dy: number, dz: number, t: number
  * space with the base parts even before exploding — real headboards sit on the base, they
  * don't occupy the same slab of air.
  */
-export function bedExplodedBoxes(idPrefix: string, bed: BedSpec, geo: BedDerivedGeometry, t: number): Record<string, Box3D> {
-  const boxes: Record<string, Box3D> = {};
+export function bedExplodedBoxes(idPrefix: string, bed: BedSpec, geo: BedDerivedGeometry, t: number): PlacedBox[] {
+  const boxes: PlacedBox[] = [];
   const id = (suffix: string) => `${idPrefix}-${suffix}`;
+  const push = (partId: string, box: Box3D) => boxes.push({ partId, box });
 
   const explodeX = geo.outerWidth * 0.3 + 90;
   const explodeY = geo.outerLength * 0.18 + 90;
   const explodeZ = bed.baseHeightMm * 0.9 + 90;
 
   const sideL: Box3D = { x: 0, y: 0, z: 0, length: bed.sideThicknessMm, width: geo.outerLength, height: bed.baseHeightMm };
-  boxes[id('SIDE-L-01')] = lerpBox(sideL, -explodeX, 0, 0, t);
+  push(id('SIDE-L-01'), lerpBox(sideL, -explodeX, 0, 0, t));
 
   const sideR: Box3D = { x: geo.outerWidth - bed.sideThicknessMm, y: 0, z: 0, length: bed.sideThicknessMm, width: geo.outerLength, height: bed.baseHeightMm };
-  boxes[id('SIDE-R-01')] = lerpBox(sideR, explodeX, 0, 0, t);
+  push(id('SIDE-R-01'), lerpBox(sideR, explodeX, 0, 0, t));
 
   const headBase: Box3D = { x: 0, y: 0, z: 0, length: geo.outerWidth, width: bed.sideThicknessMm, height: bed.baseHeightMm };
-  boxes[id('HEAD-BASE-01')] = lerpBox(headBase, 0, -explodeY, 0, t);
+  push(id('HEAD-BASE-01'), lerpBox(headBase, 0, -explodeY, 0, t));
 
   const footBase: Box3D = { x: 0, y: geo.outerLength - bed.sideThicknessMm, z: 0, length: geo.outerWidth, width: bed.sideThicknessMm, height: bed.baseHeightMm };
-  boxes[id('FOOT-BASE-01')] = lerpBox(footBase, 0, explodeY, 0, t);
+  push(id('FOOT-BASE-01'), lerpBox(footBase, 0, explodeY, 0, t));
 
   const platformZ = Math.max(0, bed.baseHeightMm - bed.frameThicknessMm);
-  if (geo.liftPlatform.count === 1) {
+  if (bed.mattressBaseType === 'slats' && geo.slats) {
+    const pitch = geo.slats.slatWidthMm + geo.slats.actualGapMm;
+    const slatId = id('SLAT-01');
+    for (let i = 0; i < geo.slats.count; i++) {
+      const slat: Box3D = {
+        x: bed.frameThicknessMm,
+        y: bed.frameThicknessMm + i * pitch,
+        z: platformZ,
+        length: geo.slats.slatLengthMm,
+        width: geo.slats.slatWidthMm,
+        height: geo.slats.slatThicknessMm,
+      };
+      push(slatId, lerpBox(slat, 0, 0, explodeZ, t));
+    }
+  } else if (geo.liftPlatform.count === 1) {
     const platform: Box3D = { x: bed.frameThicknessMm, y: bed.frameThicknessMm, z: platformZ, length: geo.liftPlatform.widthEach, width: geo.liftPlatform.length, height: bed.frameThicknessMm };
-    boxes[id('LIFT-PLATFORM-01')] = lerpBox(platform, 0, 0, explodeZ, t);
+    push(id('LIFT-PLATFORM-01'), lerpBox(platform, 0, 0, explodeZ, t));
   } else {
     const half1: Box3D = { x: bed.frameThicknessMm, y: bed.frameThicknessMm, z: platformZ, length: geo.liftPlatform.widthEach, width: geo.liftPlatform.length, height: bed.frameThicknessMm };
     const half2: Box3D = { ...half1, x: half1.x + geo.liftPlatform.widthEach };
-    boxes[id('LIFT-PLATFORM-01')] = lerpBox(half1, -explodeX * 0.15, 0, explodeZ, t);
-    boxes[id('LIFT-PLATFORM-02')] = lerpBox(half2, explodeX * 0.15, 0, explodeZ, t);
+    push(id('LIFT-PLATFORM-01'), lerpBox(half1, -explodeX * 0.15, 0, explodeZ, t));
+    push(id('LIFT-PLATFORM-02'), lerpBox(half2, explodeX * 0.15, 0, explodeZ, t));
   }
 
   const backrest: Box3D = { x: bed.frameThicknessMm, y: 0, z: bed.baseHeightMm, length: geo.backPanel.width, width: bed.frameThicknessMm, height: geo.backPanel.height };
-  boxes[id('BACKREST-01')] = lerpBox(backrest, 0, -explodeY * 1.3, explodeZ * 0.3, t);
+  push(id('BACKREST-01'), lerpBox(backrest, 0, -explodeY * 1.3, explodeZ * 0.3, t));
 
   return boxes;
 }
@@ -65,30 +90,31 @@ export function bedExplodedBoxes(idPrefix: string, bed: BedSpec, geo: BedDerived
  * Just the carcass shell (sides, top, bottom, back) — no drawers. Kept as its own small,
  * legible scene rather than crowding it with every drawer's internals at once.
  */
-export function nightstandCarcassBoxes(idPrefix: string, ns: NightstandSpec, t: number): Record<string, Box3D> {
+export function nightstandCarcassBoxes(idPrefix: string, ns: NightstandSpec, t: number): PlacedBox[] {
   const geo = deriveNightstandGeometry(ns);
-  const boxes: Record<string, Box3D> = {};
+  const boxes: PlacedBox[] = [];
   const id = (suffix: string) => `${idPrefix}-${suffix}`;
+  const push = (partId: string, box: Box3D) => boxes.push({ partId, box });
 
   const explodeX = ns.width * 0.35 + 60;
   const explodeZ = ns.height * 0.3 + 60;
   const explodeY = ns.depth * 0.35 + 60;
 
   const sideL: Box3D = { x: 0, y: 0, z: 0, length: ns.sideThicknessMm, width: ns.depth, height: ns.height };
-  boxes[id('SIDE-L-01')] = lerpBox(sideL, -explodeX, 0, 0, t);
+  push(id('SIDE-L-01'), lerpBox(sideL, -explodeX, 0, 0, t));
 
   const sideR: Box3D = { x: ns.width - ns.sideThicknessMm, y: 0, z: 0, length: ns.sideThicknessMm, width: ns.depth, height: ns.height };
-  boxes[id('SIDE-R-01')] = lerpBox(sideR, explodeX, 0, 0, t);
+  push(id('SIDE-R-01'), lerpBox(sideR, explodeX, 0, 0, t));
 
   const top: Box3D = { x: 0, y: 0, z: ns.height - ns.sideThicknessMm, length: ns.width, width: ns.depth, height: ns.sideThicknessMm };
-  boxes[id('TOP-01')] = lerpBox(top, 0, 0, explodeZ, t);
+  push(id('TOP-01'), lerpBox(top, 0, 0, explodeZ, t));
 
   const bottom: Box3D = { x: 0, y: 0, z: 0, length: ns.width, width: ns.depth, height: ns.sideThicknessMm };
-  boxes[id('BOTTOM-01')] = lerpBox(bottom, 0, 0, -explodeZ, t);
+  push(id('BOTTOM-01'), lerpBox(bottom, 0, 0, -explodeZ, t));
 
   const backThickness = Math.max(4, ns.sideThicknessMm - 6);
   const back: Box3D = { x: ns.sideThicknessMm, y: ns.depth - backThickness, z: ns.sideThicknessMm, length: geo.carcassInnerWidth, width: backThickness, height: ns.height - 2 * ns.sideThicknessMm };
-  boxes[id('BACK-01')] = lerpBox(back, 0, explodeY, 0, t);
+  push(id('BACK-01'), lerpBox(back, 0, explodeY, 0, t));
 
   return boxes;
 }
@@ -98,10 +124,11 @@ export function nightstandCarcassBoxes(idPrefix: string, ns: NightstandSpec, t: 
  * of its own — not mixed in with the carcass or other drawers, so the box construction is
  * actually readable instead of lost in a crowded whole-nightstand diagram.
  */
-export function nightstandDrawerBoxes(idPrefix: string, drawerIndex: number, ns: NightstandSpec, drawer: DrawerGeometry, t: number): Record<string, Box3D> {
-  const boxes: Record<string, Box3D> = {};
+export function nightstandDrawerBoxes(idPrefix: string, drawerIndex: number, ns: NightstandSpec, drawer: DrawerGeometry, t: number): PlacedBox[] {
+  const boxes: PlacedBox[] = [];
   const dIdx = String(drawerIndex + 1).padStart(2, '0');
   const id = (suffix: string) => `${idPrefix}-DRAWER-${dIdx}-${suffix}`;
+  const push = (partId: string, box: Box3D) => boxes.push({ partId, box });
 
   const explodeSide = drawer.boxWidth * 0.25 + 40;
   const explodeFrontOut = drawer.boxDepth * 0.9 + 60;
@@ -110,19 +137,19 @@ export function nightstandDrawerBoxes(idPrefix: string, drawerIndex: number, ns:
 
   // Local origin: the box's own bottom-front-left corner sits at (0,0,0).
   const boxBottom: Box3D = { x: 0, y: 0, z: 0, length: drawer.boxWidth, width: drawer.boxDepth, height: Math.max(4, ns.sideThicknessMm - 12) };
-  boxes[id('BOX-BOTTOM')] = lerpBox(boxBottom, 0, 0, -explodeBottom, t);
+  push(id('BOX-BOTTOM'), lerpBox(boxBottom, 0, 0, -explodeBottom, t));
 
   const boxSideL: Box3D = { x: 0, y: 0, z: 0, length: ns.sideThicknessMm, width: drawer.boxDepth, height: drawer.boxHeight };
-  boxes[id('BOX-SIDE-L')] = lerpBox(boxSideL, -explodeSide, 0, 0, t);
+  push(id('BOX-SIDE-L'), lerpBox(boxSideL, -explodeSide, 0, 0, t));
 
   const boxSideR: Box3D = { x: drawer.boxWidth - ns.sideThicknessMm, y: 0, z: 0, length: ns.sideThicknessMm, width: drawer.boxDepth, height: drawer.boxHeight };
-  boxes[id('BOX-SIDE-R')] = lerpBox(boxSideR, explodeSide, 0, 0, t);
+  push(id('BOX-SIDE-R'), lerpBox(boxSideR, explodeSide, 0, 0, t));
 
   const boxBack: Box3D = { x: 0, y: drawer.boxDepth - ns.sideThicknessMm, z: 0, length: drawer.boxWidth, width: ns.sideThicknessMm, height: drawer.boxHeight };
-  boxes[id('BOX-BACK')] = lerpBox(boxBack, 0, explodeBack, 0, t);
+  push(id('BOX-BACK'), lerpBox(boxBack, 0, explodeBack, 0, t));
 
   const front: Box3D = { x: -10, y: -ns.sideThicknessMm, z: 0, length: drawer.boxWidth + 20, width: ns.sideThicknessMm, height: drawer.frontHeight };
-  boxes[id('FRONT')] = lerpBox(front, 0, -explodeFrontOut, 0, t);
+  push(id('FRONT'), lerpBox(front, 0, -explodeFrontOut, 0, t));
 
   return boxes;
 }

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Part, Project } from '../../models';
 import type { DerivedProject } from '../../engine/derive';
-import { bedExplodedBoxes, nightstandCarcassBoxes, nightstandDrawerBoxes, type Box3D } from '../../engine/explodedLayout';
+import { bedExplodedBoxes, nightstandCarcassBoxes, nightstandDrawerBoxes, type Box3D, type PlacedBox } from '../../engine/explodedLayout';
 import { deriveNightstandGeometry } from '../../engine/rules/nightstandRules';
 
 interface Props {
@@ -57,18 +57,21 @@ function BoxIso({ box, fill }: { box: Box3D; fill: string }) {
 }
 
 /** Fallback for free-form items: no known geometric relationship, so just fan them vertically. */
-function genericStackBoxes(parts: Part[]): Record<string, Box3D> {
+function genericStackBoxes(parts: Part[]): PlacedBox[] {
   let z = 0;
-  const boxes: Record<string, Box3D> = {};
+  const boxes: PlacedBox[] = [];
   for (const p of parts) {
-    const height = Math.max(p.dimensions.thicknessMm, 6);
-    boxes[p.id] = { x: -p.dimensions.length / 2, y: -p.dimensions.width / 2, z, length: p.dimensions.length, width: p.dimensions.width, height };
-    z += height + 40;
+    for (let i = 0; i < p.quantity; i++) {
+      const height = Math.max(p.dimensions.thicknessMm, 6);
+      boxes.push({ partId: p.id, box: { x: -p.dimensions.length / 2, y: -p.dimensions.width / 2, z, length: p.dimensions.length, width: p.dimensions.width, height } });
+      z += height + 40;
+    }
   }
   return boxes;
 }
 
 interface Entry {
+  key: string;
   part: Part;
   box: Box3D;
   assembledBox: Box3D;
@@ -80,12 +83,16 @@ interface Card {
   entries: Entry[];
 }
 
-function zipBoxes(parts: Part[], boxMap: Record<string, Box3D>, assembledMap: Record<string, Box3D>): Entry[] {
+/** Zips two same-shaped PlacedBox[] runs (current t and assembled t=0) by position — both
+ * calls iterate the identical fixed structure, so index-alignment is guaranteed even when
+ * a single part appears many times (e.g. 12 slats sharing one Part row). */
+function zipBoxes(parts: Part[], current: PlacedBox[], assembled: PlacedBox[]): Entry[] {
+  const partsById = new Map(parts.map((p) => [p.id, p]));
   const entries: Entry[] = [];
-  for (const part of parts) {
-    const box = boxMap[part.id];
-    const assembledBox = assembledMap[part.id];
-    if (box && assembledBox) entries.push({ part, box, assembledBox });
+  for (let i = 0; i < current.length; i++) {
+    const part = partsById.get(current[i].partId);
+    const assembledBox = assembled[i]?.box;
+    if (part && assembledBox) entries.push({ key: `${current[i].partId}#${i}`, part, box: current[i].box, assembledBox });
   }
   return entries;
 }
@@ -112,10 +119,10 @@ export function ExplodedView({ project, derived }: Props) {
       if (item.kind === 'bed') {
         const entry = derived.bedGeometries.find((g) => g.itemId === item.id);
         if (!entry) continue;
-        const boxMap = bedExplodedBoxes(item.id, item.spec, entry.geometry, t);
-        const assembledMap = bedExplodedBoxes(item.id, item.spec, entry.geometry, 0);
+        const current = bedExplodedBoxes(item.id, item.spec, entry.geometry, t);
+        const assembled = bedExplodedBoxes(item.id, item.spec, entry.geometry, 0);
         const parts = derived.parts.filter((p) => p.componentId === `COMP-${item.id}`);
-        const entries = zipBoxes(parts, boxMap, assembledMap);
+        const entries = zipBoxes(parts, current, assembled);
         if (entries.length > 0) result.push({ key: item.id, title: item.name, entries });
       } else if (item.kind === 'nightstand') {
         const geo = deriveNightstandGeometry(item.spec);
@@ -124,27 +131,28 @@ export function ExplodedView({ project, derived }: Props) {
           const componentId = `COMP-${unitPrefix}-UNIT`;
           const unitParts = derived.parts.filter((p) => p.componentId === componentId);
 
-          const carcassMap = nightstandCarcassBoxes(unitPrefix, item.spec, t);
+          const carcassCurrent = nightstandCarcassBoxes(unitPrefix, item.spec, t);
           const carcassAssembled = nightstandCarcassBoxes(unitPrefix, item.spec, 0);
           const carcassParts = unitParts.filter((p) => !p.id.includes('-DRAWER-'));
-          const carcassEntries = zipBoxes(carcassParts, carcassMap, carcassAssembled);
+          const carcassEntries = zipBoxes(carcassParts, carcassCurrent, carcassAssembled);
           if (carcassEntries.length > 0) result.push({ key: `${componentId}-carcass`, title: `${item.name} ${unit} — الهيكل`, entries: carcassEntries });
 
           geo.drawers.forEach((drawer, i) => {
-            const drawerMap = nightstandDrawerBoxes(unitPrefix, i, item.spec, drawer, t);
+            const drawerCurrent = nightstandDrawerBoxes(unitPrefix, i, item.spec, drawer, t);
             const drawerAssembled = nightstandDrawerBoxes(unitPrefix, i, item.spec, drawer, 0);
             const dIdx = String(i + 1).padStart(2, '0');
             const prefix = `${unitPrefix}-DRAWER-${dIdx}-`;
             const drawerParts = unitParts.filter((p) => p.id.startsWith(prefix));
-            const drawerEntries = zipBoxes(drawerParts, drawerMap, drawerAssembled);
+            const drawerEntries = zipBoxes(drawerParts, drawerCurrent, drawerAssembled);
             if (drawerEntries.length > 0) result.push({ key: `${componentId}-drawer-${i}`, title: `${item.name} ${unit} — درج ${i + 1}`, entries: drawerEntries });
           });
         }
       } else {
         const parts = derived.parts.filter((p) => p.componentId === `COMP-FREE-${item.id}`);
         if (parts.length === 0) continue;
-        const boxMap = genericStackBoxes(parts);
-        result.push({ key: item.id, title: item.name, entries: parts.map((part) => ({ part, box: boxMap[part.id], assembledBox: boxMap[part.id] })) });
+        const placed = genericStackBoxes(parts);
+        const entries = zipBoxes(parts, placed, placed);
+        result.push({ key: item.id, title: item.name, entries });
       }
     }
 
@@ -173,27 +181,32 @@ export function ExplodedView({ project, derived }: Props) {
           const maxY = Math.max(...pts.map((p) => p.sy));
           const pad = 20;
           const viewBox = `${minX - pad} ${minY - pad} ${maxX - minX + 2 * pad} ${maxY - minY + 2 * pad}`;
-          const colorOf = new Map(entries.map((e, i) => [e.part.id, PALETTE[i % PALETTE.length]]));
+          const colorOf = new Map(entries.map((e, i) => [e.key, PALETTE[i % PALETTE.length]]));
+
+          // Legend: one line per distinct part (not per instance), so 12 slats show once.
+          const seenParts = new Set<string>();
+          const legendEntries = entries.filter((e) => (seenParts.has(e.part.id) ? false : (seenParts.add(e.part.id), true)));
 
           return (
             <div className="exploded-card" key={key}>
               <h4>{title}</h4>
               <svg viewBox={viewBox} width="100%" height={300}>
                 {t > 0.02 &&
-                  sorted.map(({ part, box, assembledBox }) => {
-                    const from = center(assembledBox);
-                    const to = center(box);
-                    return <line key={`guide-${part.id}`} x1={from.sx} y1={from.sy} x2={to.sx} y2={to.sy} stroke="#8f6a45" strokeWidth={0.6} strokeDasharray="4 4" opacity={0.5} />;
+                  sorted.map((e) => {
+                    const from = center(e.assembledBox);
+                    const to = center(e.box);
+                    return <line key={`guide-${e.key}`} x1={from.sx} y1={from.sy} x2={to.sx} y2={to.sy} stroke="#8f6a45" strokeWidth={0.6} strokeDasharray="4 4" opacity={0.5} />;
                   })}
-                {sorted.map(({ part, box }) => (
-                  <BoxIso key={part.id} box={box} fill={colorOf.get(part.id)!} />
+                {sorted.map((e) => (
+                  <BoxIso key={e.key} box={e.box} fill={colorOf.get(e.key)!} />
                 ))}
               </svg>
               <ul className="legend">
-                {entries.map(({ part }, i) => (
-                  <li key={part.id}>
-                    <span className="swatch" style={{ background: PALETTE[i % PALETTE.length] }} />
-                    {part.nameAr ?? part.name}
+                {legendEntries.map((e) => (
+                  <li key={e.key}>
+                    <span className="swatch" style={{ background: colorOf.get(e.key) }} />
+                    {e.part.nameAr ?? e.part.name}
+                    {e.part.quantity > 1 ? ` ×${e.part.quantity}` : ''}
                   </li>
                 ))}
               </ul>

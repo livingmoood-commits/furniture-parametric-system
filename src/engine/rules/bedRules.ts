@@ -13,6 +13,16 @@ export interface BackPanelGeometry {
   height: number;
 }
 
+export interface SlatsGeometry {
+  count: number;
+  slatWidthMm: number;
+  slatThicknessMm: number;
+  /** Each slat spans the storage width, side rail to side rail. */
+  slatLengthMm: number;
+  /** Recomputed so `count` slats distribute evenly across storageLength — rarely equals slatGapMm exactly. */
+  actualGapMm: number;
+}
+
 export interface BedDerivedGeometry {
   outerWidth: number;
   outerLength: number;
@@ -20,6 +30,7 @@ export interface BedDerivedGeometry {
   storageLength: number;
   storageDepth: number;
   liftPlatform: LiftPlatformGeometry;
+  slats?: SlatsGeometry;
   backPanel: BackPanelGeometry;
   finalMattressHeight: number;
 }
@@ -42,6 +53,14 @@ export function deriveBedGeometry(bed: BedSpec, usableBoardWidthMm: number): Bed
     ? { count: 2, widthEach: storageWidth / 2, length: storageLength, splitNeeded: true }
     : { count: 1, widthEach: storageWidth, length: storageLength, splitNeeded: false };
 
+  let slats: SlatsGeometry | undefined;
+  if (bed.mattressBaseType === 'slats') {
+    const pitch = bed.slatWidthMm + bed.slatGapMm;
+    const count = Math.max(2, Math.round(storageLength / pitch));
+    const actualGapMm = Math.max(0, (storageLength - count * bed.slatWidthMm) / count);
+    slats = { count, slatWidthMm: bed.slatWidthMm, slatThicknessMm: bed.slatThicknessMm, slatLengthMm: storageWidth, actualGapMm };
+  }
+
   const backPanel: BackPanelGeometry = {
     width: outerWidth - 2 * bed.frameThicknessMm,
     height: bed.backHeightMm,
@@ -49,5 +68,5 @@ export function deriveBedGeometry(bed: BedSpec, usableBoardWidthMm: number): Bed
 
   const finalMattressHeight = bed.baseHeightMm + bed.mattress.thicknessMm;
 
-  return { outerWidth, outerLength, storageWidth, storageLength, storageDepth, liftPlatform, backPanel, finalMattressHeight };
+  return { outerWidth, outerLength, storageWidth, storageLength, storageDepth, liftPlatform, slats, backPanel, finalMattressHeight };
 }

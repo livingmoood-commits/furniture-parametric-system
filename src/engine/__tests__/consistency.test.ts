@@ -12,6 +12,10 @@ describe('deriveProject — One Source of Truth pipeline', () => {
     expect(derived.parts.length).toBeGreaterThan(0);
     expect(derived.nesting.totalBoardsUsed).toBeGreaterThan(0);
     expect(derived.nesting.unplacedParts).toHaveLength(0);
+    // Regression guard for the multi-bin packer: a shelf-packing or "fill one board fully
+    // before opening the next" approach measurably does worse than this on the reference
+    // project (previously 6 boards / 61.7%; the multi-bin best-fit packer gets 5 / 74%).
+    expect(derived.nesting.overallEfficiencyPct).toBeGreaterThan(70);
 
     for (const board of derived.nesting.boards) {
       expect(boardHasCollisions(board)).toBe(false);

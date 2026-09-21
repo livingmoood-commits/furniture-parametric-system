@@ -86,4 +86,35 @@ describe('runNesting', () => {
     expect(result.overallEfficiencyPct).toBeGreaterThan(0);
     expect(result.overallEfficiencyPct).toBeLessThanOrEqual(100);
   });
+
+  it('fills leftover space on an already-open board with a later, unrelated part instead of opening a new one', () => {
+    // A 2000x900 piece leaves a large leftover strip on a 2440x1220 usable board;
+    // a small unrelated piece from a "different furniture item" must land in that
+    // leftover space rather than forcing a second board.
+    const big = makePart({ id: 'BED-BACKREST', dimensions: { length: 2000, width: 900, thicknessMm: 18 } });
+    const small = makePart({ id: 'NS-SIDE', dimensions: { length: 300, width: 250, thicknessMm: 18 } });
+    const result = runNesting([big, small], [makeBoard()], settings);
+
+    expect(result.unplacedParts).toHaveLength(0);
+    expect(result.boards).toHaveLength(1);
+    expect(result.boards[0].placements.map((p) => p.partId).sort()).toEqual(['BED-BACKREST', 'NS-SIDE']);
+    expect(boardHasCollisions(result.boards[0])).toBe(false);
+  });
+
+  it('checks every already-open board for room before opening a new one', () => {
+    // Two boards' worth of big pieces first, each leaving a small leftover corner;
+    // several small pieces that only fit in those leftovers must not force new boards.
+    const bigs = [
+      makePart({ id: 'BIG-1', dimensions: { length: 2400, width: 1000, thicknessMm: 18 } }),
+      makePart({ id: 'BIG-2', dimensions: { length: 2400, width: 1000, thicknessMm: 18 } }),
+    ];
+    const smalls = Array.from({ length: 4 }, (_, i) => makePart({ id: `SMALL-${i}`, dimensions: { length: 200, width: 150, thicknessMm: 18 } }));
+    const result = runNesting([...bigs, ...smalls], [makeBoard({ qtyAvailable: 10 })], settings);
+
+    expect(result.unplacedParts).toHaveLength(0);
+    expect(result.boards).toHaveLength(2);
+    for (const board of result.boards) {
+      expect(boardHasCollisions(board)).toBe(false);
+    }
+  });
 });

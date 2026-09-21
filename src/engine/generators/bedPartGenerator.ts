@@ -55,31 +55,52 @@ export function generateBedParts(idPrefix: string, bed: BedSpec, geo: BedDerived
   };
   const footBase: Part = { ...headBase, id: id('FOOT-BASE-01'), name: 'Foot end base panel', nameAr: 'قاعدة طرف الرجل' };
 
-  const liftPlatformParts: Part[] = Array.from({ length: geo.liftPlatform.count }, (_, i) => {
-    const idx = i + 1;
-    const partId = geo.liftPlatform.count === 1 ? id('LIFT-PLATFORM-01') : id(`LIFT-PLATFORM-0${idx}`);
-    const part: Part = {
-      id: partId,
-      name: geo.liftPlatform.count === 1 ? 'Lift platform' : `Lift platform (half ${idx})`,
-      nameAr: geo.liftPlatform.count === 1 ? 'لوح الرفع' : `لوح الرفع (نص ${idx})`,
-      componentId,
-      dimensions: { length: geo.liftPlatform.length, width: geo.liftPlatform.widthEach, thicknessMm: bed.frameThicknessMm },
-      quantity: 1,
-      materialId: bed.materialId,
-      grainDirection: 'none',
-      rotationAllowed: true,
-      edgeBanding: defaultEdgeBanding(),
-      machiningOperations: [],
-      assembly: [
-        { toPartId: id('SIDE-L-01'), joinType: 'hinge', fastenerCount: 2, note: 'Hydraulic lift hinge' },
-        { toPartId: id('SIDE-R-01'), joinType: 'hinge', fastenerCount: 2, note: 'Hydraulic lift hinge' },
-      ],
-    };
-    if (geo.liftPlatform.splitNeeded) {
-      part.splitInfo = { originalPartId: id('LIFT-PLATFORM'), index: idx, of: geo.liftPlatform.count, axis: 'width' };
-    }
-    return part;
-  });
+  const platformParts: Part[] =
+    bed.mattressBaseType === 'slats' && geo.slats
+      ? [
+          {
+            id: id('SLAT-01'),
+            name: 'Mattress support slat',
+            nameAr: `ملة دعم الفرش (فاصل ${geo.slats.actualGapMm.toFixed(0)}مم)`,
+            componentId,
+            dimensions: { length: geo.slats.slatLengthMm, width: geo.slats.slatWidthMm, thicknessMm: geo.slats.slatThicknessMm },
+            quantity: geo.slats.count,
+            materialId: bed.materialId,
+            grainDirection: 'length',
+            rotationAllowed: true,
+            edgeBanding: defaultEdgeBanding(),
+            machiningOperations: [],
+            assembly: [
+              { toPartId: id('SIDE-L-01'), joinType: 'screw', fastenerCount: 1, note: `${geo.slats.count} slats, ${geo.slats.actualGapMm.toFixed(0)}mm gap between each` },
+              { toPartId: id('SIDE-R-01'), joinType: 'screw', fastenerCount: 1 },
+            ],
+          },
+        ]
+      : Array.from({ length: geo.liftPlatform.count }, (_, i) => {
+          const idx = i + 1;
+          const partId = geo.liftPlatform.count === 1 ? id('LIFT-PLATFORM-01') : id(`LIFT-PLATFORM-0${idx}`);
+          const part: Part = {
+            id: partId,
+            name: geo.liftPlatform.count === 1 ? 'Lift platform' : `Lift platform (half ${idx})`,
+            nameAr: geo.liftPlatform.count === 1 ? 'لوح الرفع' : `لوح الرفع (نص ${idx})`,
+            componentId,
+            dimensions: { length: geo.liftPlatform.length, width: geo.liftPlatform.widthEach, thicknessMm: bed.frameThicknessMm },
+            quantity: 1,
+            materialId: bed.materialId,
+            grainDirection: 'none',
+            rotationAllowed: true,
+            edgeBanding: defaultEdgeBanding(),
+            machiningOperations: [],
+            assembly: [
+              { toPartId: id('SIDE-L-01'), joinType: 'hinge', fastenerCount: 2, note: 'Hydraulic lift hinge' },
+              { toPartId: id('SIDE-R-01'), joinType: 'hinge', fastenerCount: 2, note: 'Hydraulic lift hinge' },
+            ],
+          };
+          if (geo.liftPlatform.splitNeeded) {
+            part.splitInfo = { originalPartId: id('LIFT-PLATFORM'), index: idx, of: geo.liftPlatform.count, axis: 'width' };
+          }
+          return part;
+        });
 
   const backrest: Part = {
     id: id('BACKREST-01'),
@@ -99,7 +120,7 @@ export function generateBedParts(idPrefix: string, bed: BedSpec, geo: BedDerived
     backrest.sourceFlag = `Back finish is "${bed.backMaterial}" — panel below is the wood substrate; upholstery/rattan is a Hardware/Accessories line, not a cut part.`;
   }
 
-  parts.push(sideL, sideR, headBase, footBase, ...liftPlatformParts, backrest);
+  parts.push(sideL, sideR, headBase, footBase, ...platformParts, backrest);
 
   const component: Component = {
     id: componentId,
