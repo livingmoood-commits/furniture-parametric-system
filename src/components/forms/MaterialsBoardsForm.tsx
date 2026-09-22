@@ -83,6 +83,16 @@ export function MaterialsBoardsForm({ materials, boards, displayUnit, onMaterial
               <LengthField label="الطول" unit={displayUnit} valueMm={b.length} onChangeMm={(v) => updateBoard(b.id, { length: v })} />
               <LengthField label="العرض" unit={displayUnit} valueMm={b.width} onChangeMm={(v) => updateBoard(b.id, { width: v })} />
               <NumberField label="الكمية المتاحة" value={b.qtyAvailable} min={0} onChange={(v) => updateBoard(b.id, { qtyAvailable: v })} />
+              <label className="field">
+                <span>السعر لكل لوح (اختياري)</span>
+                <input
+                  type="number"
+                  min={0}
+                  value={b.pricePerBoard ?? ''}
+                  placeholder="غير محدد"
+                  onChange={(e) => updateBoard(b.id, { pricePerBoard: e.target.value === '' ? undefined : Number(e.target.value) })}
+                />
+              </label>
             </div>
             <button type="button" className="danger" onClick={() => removeBoard(b.id)}>
               حذف اللوح

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
-import type { Project } from './models';
+import type { DisplayUnit, Project } from './models';
 import { createDefaultProject } from './data/defaultProject';
 import { deriveProject } from './engine/derive';
 import { FurnitureList } from './components/forms/FurnitureList';
@@ -12,9 +12,13 @@ import { ExplodedView } from './components/results/ExplodedView';
 import { AssemblyView } from './components/results/AssemblyView';
 import { HardwareView } from './components/results/HardwareView';
 import { QCView } from './components/results/QCView';
+import { CostView } from './components/results/CostView';
+import { computeBoardCost } from './engine/costEngine';
+import { UNIT_SUFFIX } from './engine/units';
 import {
   AssemblyIcon,
   BoardCuttingIcon,
+  CostIcon,
   CuttingListIcon,
   ExplodedIcon,
   FinalProductIcon,
@@ -26,7 +30,7 @@ import {
 } from './components/icons';
 import './App.css';
 
-type Tab = 'summary' | 'cutting-list' | 'board-cutting' | 'exploded' | 'assembly' | 'hardware' | 'qc';
+type Tab = 'summary' | 'cutting-list' | 'board-cutting' | 'exploded' | 'assembly' | 'hardware' | 'cost' | 'qc';
 
 const TABS: Array<{ id: Tab; label: string; icon: ComponentType<{ className?: string }> }> = [
   { id: 'summary', label: '01 · المنتج النهائي', icon: FinalProductIcon },
@@ -35,8 +39,11 @@ const TABS: Array<{ id: Tab; label: string; icon: ComponentType<{ className?: st
   { id: 'exploded', label: 'المنظور المتفكك', icon: ExplodedIcon },
   { id: 'assembly', label: '09 · تعليمات التجميع', icon: AssemblyIcon },
   { id: 'hardware', label: '07 · Hardware', icon: HardwareIcon },
+  { id: 'cost', label: 'التكلفة', icon: CostIcon },
   { id: 'qc', label: '10 · الفحص النهائي', icon: QCIcon },
 ];
+
+const UNIT_OPTIONS: DisplayUnit[] = ['mm', 'cm', 'm'];
 
 const SIDEBAR_MIN = 300;
 const SIDEBAR_MAX = 900;
@@ -108,6 +115,7 @@ function App() {
   const derived = useMemo(() => deriveProject(project), [project]);
 
   const materialNames = useMemo(() => Object.fromEntries(project.materials.map((m) => [m.id, m.nameAr])), [project.materials]);
+  const cost = useMemo(() => computeBoardCost(derived.nesting, project.boards), [derived.nesting, project.boards]);
 
   return (
     <div className="app-shell" dir="ltr" lang="ar">
@@ -121,12 +129,11 @@ function App() {
         </div>
         <div className="header-actions">
           <div className="unit-toggle" role="group" aria-label="وحدة القياس">
-            <button type="button" className={project.displayUnit === 'mm' ? 'unit-btn active' : 'unit-btn'} onClick={() => setProject({ ...project, displayUnit: 'mm' })}>
-              مم
-            </button>
-            <button type="button" className={project.displayUnit === 'cm' ? 'unit-btn active' : 'unit-btn'} onClick={() => setProject({ ...project, displayUnit: 'cm' })}>
-              سم
-            </button>
+            {UNIT_OPTIONS.map((u) => (
+              <button key={u} type="button" className={project.displayUnit === u ? 'unit-btn active' : 'unit-btn'} onClick={() => setProject({ ...project, displayUnit: u })}>
+                {UNIT_SUFFIX[u]}
+              </button>
+            ))}
           </div>
           <button type="button" className="print-btn" onClick={() => window.print()}>
             <PrintIcon />
@@ -209,6 +216,9 @@ function App() {
               {tab === 'exploded' && <ExplodedView project={project} derived={derived} />}
               {tab === 'assembly' && <AssemblyView instructions={derived.assembly} />}
               {tab === 'hardware' && <HardwareView items={derived.hardware} edgeBanding={derived.edgeBanding} materials={project.materials} />}
+              {tab === 'cost' && (
+                <CostView cost={cost} materials={project.materials} priceList={project.priceList} onPriceListChange={(priceList) => setProject({ ...project, priceList })} />
+              )}
               {tab === 'qc' && <QCView items={derived.qc} unplaced={derived.nesting.unplacedParts} />}
             </section>
           </main>

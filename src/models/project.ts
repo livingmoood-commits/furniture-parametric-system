@@ -96,7 +96,18 @@ export interface NestingSettings {
   edgeMarginMm: number;
 }
 
-export type DisplayUnit = 'mm' | 'cm';
+/** A freeform priced line the user maintains by hand — hardware, labor, delivery, anything
+ * the app has no real-world pricing data for. Independent of the board cost, which is
+ * always derived from nesting + Board.pricePerBoard. */
+export interface PriceListItem {
+  id: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  unit: string;
+}
+
+export type DisplayUnit = 'mm' | 'cm' | 'm';
 
 export function defaultEdgeBanding(): EdgeBanding {
   return { ...NO_EDGE_BANDING };
@@ -109,6 +120,7 @@ export interface Project {
   materials: Material[];
   boards: Board[];
   nesting: NestingSettings;
+  priceList: PriceListItem[];
   displayUnit: DisplayUnit;
   lang: 'ar-eg';
 }

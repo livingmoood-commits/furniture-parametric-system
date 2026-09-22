@@ -1,5 +1,5 @@
 import type { DisplayUnit } from '../../models';
-import { displayToMm, mmToDisplay } from '../../engine/units';
+import { displayToMm, mmToDisplay, UNIT_STEP, UNIT_SUFFIX } from '../../engine/units';
 
 export function NumberField({ label, value, onChange, step = 1, min }: { label: string; value: number; onChange: (v: number) => void; step?: number; min?: number }) {
   return (
@@ -11,7 +11,7 @@ export function NumberField({ label, value, onChange, step = 1, min }: { label: 
 }
 
 function roundForDisplay(v: number, unit: DisplayUnit): number {
-  const factor = unit === 'cm' ? 10 : 1;
+  const factor = 1 / UNIT_STEP[unit];
   return Math.round(v * factor) / factor;
 }
 
@@ -34,8 +34,8 @@ export function LengthField({
   min?: number;
 }) {
   const displayValue = roundForDisplay(mmToDisplay(valueMm, unit), unit);
-  const step = unit === 'cm' ? 0.1 : 1;
-  const suffix = unit === 'cm' ? 'سم' : 'مم';
+  const step = UNIT_STEP[unit];
+  const suffix = UNIT_SUFFIX[unit];
   return (
     <label className="field">
       <span>

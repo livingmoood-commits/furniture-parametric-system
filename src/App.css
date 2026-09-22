@@ -373,6 +373,38 @@ button.danger {
   color: var(--warn);
   font-weight: 600;
 }
+.cost-warning {
+  background: #fdf0e4;
+  border: 1px solid var(--warn);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+.cost-total-card {
+  border: 2px solid var(--accent);
+}
+.cost-total-figure {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 4px 0;
+}
+.cost-totals-grid {
+  margin-top: 20px;
+}
+.price-item-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+.price-item-subtotal {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 13px;
+  justify-content: flex-end;
+}
+.price-item-subtotal strong {
+  font-size: 15px;
+}
 
 .board-grid {
   display: flex;

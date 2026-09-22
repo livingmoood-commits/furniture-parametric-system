@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { BoardInstance, DisplayUnit, Part } from '../../models';
-import { mmToDisplay } from '../../engine/units';
+import { mmToDisplay, UNIT_STEP, UNIT_SUFFIX } from '../../engine/units';
 import { FullscreenSection } from '../FullscreenSection';
 
 interface Props {
@@ -11,7 +11,7 @@ interface Props {
 }
 
 function fmt(mm: number, unit: DisplayUnit): string {
-  const factor = unit === 'cm' ? 10 : 1;
+  const factor = 1 / UNIT_STEP[unit];
   const v = Math.round(mmToDisplay(mm, unit) * factor) / factor;
   return `${v}`;
 }
@@ -24,7 +24,7 @@ function fmt(mm: number, unit: DisplayUnit): string {
  */
 export function BoardCuttingView({ boards, materialNames, parts, displayUnit }: Props) {
   const partById = useMemo(() => new Map(parts.map((p) => [p.id, p])), [parts]);
-  const unitSuffix = displayUnit === 'cm' ? 'سم' : 'مم';
+  const unitSuffix = UNIT_SUFFIX[displayUnit];
 
   if (boards.length === 0) {
     return <p className="empty-row">مفيش ألواح لسه — كمّل بيانات المشروع الأول.</p>;

@@ -56,6 +56,7 @@ export function createDefaultProject(): Project {
       { id: 'BOARD-MDF-6', materialId: 'MAT-MDF-6', length: 2440, width: 1220, thicknessMm: 6, qtyAvailable: 5 },
     ],
     nesting: { kerfMm: 5, edgeMarginMm: 10 },
+    priceList: [],
     displayUnit: 'mm',
     lang: 'ar-eg',
   };
