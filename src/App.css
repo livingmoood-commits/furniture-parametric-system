@@ -429,6 +429,23 @@ button.danger {
   color: var(--ok);
   font-weight: 600;
 }
+.dxf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.dxf-btn:hover {
+  background: var(--accent-light);
+  color: var(--ink);
+}
 
 .fullscreen-host {
   position: relative;

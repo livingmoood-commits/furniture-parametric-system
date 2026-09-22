@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import type { BoardInstance, DisplayUnit, Part } from '../../models';
 import { mmToDisplay, UNIT_STEP, UNIT_SUFFIX } from '../../engine/units';
+import { downloadBoardDxf } from '../../engine/dxfExport';
 import { FullscreenSection } from '../FullscreenSection';
+import { DownloadIcon } from '../icons';
 
 interface Props {
   boards: BoardInstance[];
@@ -35,9 +37,15 @@ export function BoardCuttingView({ boards, materialNames, parts, displayUnit }: 
       {boards.map((b) => (
         <FullscreenSection className="board-card" key={b.boardInstanceId}>
           <div className="board-card-header">
-            <strong>{b.boardInstanceId}</strong> — {materialNames[b.materialId] ?? b.materialId} — {fmt(b.length, displayUnit)}×{fmt(b.width, displayUnit)}
-            {unitSuffix}×{b.thicknessMm}مم
-            <span className="eff">كفاءة {b.efficiencyPct.toFixed(1)}%</span>
+            <span>
+              <strong>{b.boardInstanceId}</strong> — {materialNames[b.materialId] ?? b.materialId} — {fmt(b.length, displayUnit)}×{fmt(b.width, displayUnit)}
+              {unitSuffix}×{b.thicknessMm}مم
+              <span className="eff">كفاءة {b.efficiencyPct.toFixed(1)}%</span>
+            </span>
+            <button type="button" className="dxf-btn" onClick={() => downloadBoardDxf(b)}>
+              <DownloadIcon />
+              تنزيل DXF
+            </button>
           </div>
           <svg viewBox={`0 0 ${b.length} ${b.width}`} width="100%" height={Math.max(320, b.width * 0.34)} preserveAspectRatio="xMidYMid meet">
             <rect x={0} y={0} width={b.length} height={b.width} fill="#efe8d8" stroke="#2b2a27" strokeWidth={4} />
