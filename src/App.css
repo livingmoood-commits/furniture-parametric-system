@@ -446,6 +446,23 @@ button.danger {
   background: var(--accent-light);
   color: var(--ink);
 }
+.qr-print-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.qr-print-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
 
 .fullscreen-host {
   position: relative;

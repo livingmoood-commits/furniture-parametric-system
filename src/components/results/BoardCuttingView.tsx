@@ -1,15 +1,17 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { BoardInstance, DisplayUnit, Part } from '../../models';
 import { mmToDisplay, UNIT_STEP, UNIT_SUFFIX } from '../../engine/units';
 import { downloadBoardDxf } from '../../engine/dxfExport';
+import { printPartLabels } from '../../engine/qrLabels';
 import { FullscreenSection } from '../FullscreenSection';
-import { DownloadIcon } from '../icons';
+import { DownloadIcon, QRIcon } from '../icons';
 
 interface Props {
   boards: BoardInstance[];
   materialNames: Record<string, string>;
   parts: Part[];
   displayUnit: DisplayUnit;
+  projectName: string;
 }
 
 function fmt(mm: number, unit: DisplayUnit): string {
@@ -24,16 +26,30 @@ function fmt(mm: number, unit: DisplayUnit): string {
  * Every label is clipped to its own rectangle so a narrow neighbouring piece can never
  * bleed its text into the piece next to it.
  */
-export function BoardCuttingView({ boards, materialNames, parts, displayUnit }: Props) {
+export function BoardCuttingView({ boards, materialNames, parts, displayUnit, projectName }: Props) {
   const partById = useMemo(() => new Map(parts.map((p) => [p.id, p])), [parts]);
   const unitSuffix = UNIT_SUFFIX[displayUnit];
+  const [printing, setPrinting] = useState(false);
 
   if (boards.length === 0) {
     return <p className="empty-row">مفيش ألواح لسه — كمّل بيانات المشروع الأول.</p>;
   }
 
+  const handlePrintLabels = async () => {
+    setPrinting(true);
+    try {
+      await printPartLabels(parts, boards, projectName);
+    } finally {
+      setPrinting(false);
+    }
+  };
+
   return (
     <div className="board-grid">
+      <button type="button" className="qr-print-btn" onClick={handlePrintLabels} disabled={printing}>
+        <QRIcon />
+        {printing ? 'بيجهّز الليابلات...' : 'طباعة ليابل QR لكل القطع'}
+      </button>
       {boards.map((b) => (
         <FullscreenSection className="board-card" key={b.boardInstanceId}>
           <div className="board-card-header">

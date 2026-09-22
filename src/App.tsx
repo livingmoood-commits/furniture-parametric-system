@@ -211,7 +211,13 @@ function App() {
               {tab === 'summary' && <SummaryView project={project} derived={derived} />}
               {tab === 'cutting-list' && <CuttingListView parts={derived.parts} materials={project.materials} displayUnit={project.displayUnit} />}
               {tab === 'board-cutting' && (
-                <BoardCuttingView boards={derived.nesting.boards} materialNames={materialNames} parts={derived.parts} displayUnit={project.displayUnit} />
+                <BoardCuttingView
+                  boards={derived.nesting.boards}
+                  materialNames={materialNames}
+                  parts={derived.parts}
+                  displayUnit={project.displayUnit}
+                  projectName={project.name}
+                />
               )}
               {tab === 'exploded' && <ExplodedView project={project} derived={derived} />}
               {tab === 'assembly' && <AssemblyView instructions={derived.assembly} />}
