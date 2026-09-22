@@ -119,10 +119,20 @@ function App() {
             <p>PARAMETRIC FURNITURE MANUFACTURING SYSTEM — من المقاسات لملف تصنيع جاهز للمصنع</p>
           </div>
         </div>
-        <button type="button" className="print-btn" onClick={() => window.print()}>
-          <PrintIcon />
-          طباعة / تصدير PDF لملف التصنيع
-        </button>
+        <div className="header-actions">
+          <div className="unit-toggle" role="group" aria-label="وحدة القياس">
+            <button type="button" className={project.displayUnit === 'mm' ? 'unit-btn active' : 'unit-btn'} onClick={() => setProject({ ...project, displayUnit: 'mm' })}>
+              مم
+            </button>
+            <button type="button" className={project.displayUnit === 'cm' ? 'unit-btn active' : 'unit-btn'} onClick={() => setProject({ ...project, displayUnit: 'cm' })}>
+              سم
+            </button>
+          </div>
+          <button type="button" className="print-btn" onClick={() => window.print()}>
+            <PrintIcon />
+            طباعة / تصدير PDF لملف التصنيع
+          </button>
+        </div>
       </header>
 
       <div className={`app-body${maximized ? ' has-maximized' : ''}`}>
@@ -152,12 +162,7 @@ function App() {
               onMaterialsChange={(materials) => setProject({ ...project, materials })}
               onBoardsChange={(boards) => setProject({ ...project, boards })}
             />
-            <NestingSettingsForm
-              nesting={project.nesting}
-              displayUnit={project.displayUnit}
-              onNestingChange={(nesting) => setProject({ ...project, nesting })}
-              onDisplayUnitChange={(displayUnit) => setProject({ ...project, displayUnit })}
-            />
+            <NestingSettingsForm nesting={project.nesting} displayUnit={project.displayUnit} onNestingChange={(nesting) => setProject({ ...project, nesting })} />
           </aside>
         )}
 
